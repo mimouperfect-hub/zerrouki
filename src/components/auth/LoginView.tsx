@@ -47,14 +47,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         
         {/* Logo & Header */}
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="p-3.5 bg-white/10 rounded-3xl border border-amber-300/40 shadow-xl backdrop-blur-md">
-            <BrandLogo size="lg" />
+          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-br from-amber-400 via-rose-500 to-purple-950 shadow-2xl border-2 border-amber-300 overflow-hidden bg-white">
+            <img src="/logo.png" alt="زروقي للحلويات ZERROUKI" className="w-full h-full object-cover rounded-full" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-white mt-2 drop-shadow-xs">تسجيل الدخول للنظام</h1>
-            <p className="text-xs text-purple-200/90 font-bold mt-1">
-              أدخل البريد الإلكتروني وكلمة السر المسلمة لك من المدير العام
-            </p>
+            <h1 className="text-2xl font-black text-white mt-1 drop-shadow-xs" style={{ fontFamily: 'Cairo, sans-serif' }}>
+              زروقي للحلويات
+            </h1>
+            <span className="inline-block bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-purple-950 font-black text-[11px] px-3 py-0.5 rounded-full shadow-md mt-1">
+              منصة التسيير والتجارة المكتملة
+            </span>
           </div>
         </div>
 

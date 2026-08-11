@@ -1,32 +1,30 @@
 import React from 'react';
 
 interface BrandLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   showText?: boolean;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 'md', showText = true }) => {
   const dimensions = {
-    sm: { box: 'w-9 h-9', text: 'text-base' },
-    md: { box: 'w-11 h-11', text: 'text-lg' },
-    lg: { box: 'w-16 h-16', text: 'text-2xl' }
+    sm: { box: 'w-10 h-10', text: 'text-base' },
+    md: { box: 'w-12 h-12', text: 'text-lg' },
+    lg: { box: 'w-20 h-20', text: 'text-2xl' },
+    xl: { box: 'w-28 h-28', text: 'text-3xl' }
   }[size];
 
   return (
     <div className="flex items-center gap-3 select-none">
-      <div className={`relative ${dimensions.box} rounded-2xl bg-gradient-to-br from-[#4C1D95] via-[#9F1239] to-[#F59E0B] p-1 shadow-md border border-amber-300/60 flex items-center justify-center shrink-0`}>
-        {/* Decorative Gold Inner Frame */}
-        <div className="absolute inset-0.5 rounded-[12px] border border-amber-200/50 border-dashed pointer-events-none" />
-        
-        {/* Sweet Icon / Calligraphy Badge */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center">
-          <span className="text-white font-black tracking-tight leading-none text-xs drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]" style={{ fontFamily: 'Cairo, sans-serif' }}>
-            زروقي
-          </span>
-          <span className="text-amber-200 font-bold text-[9px] leading-tight" style={{ fontFamily: 'Cairo, sans-serif' }}>
-            للحلويات
-          </span>
-        </div>
+      <div className={`relative ${dimensions.box} rounded-full p-0.5 bg-gradient-to-br from-amber-400 via-rose-500 to-purple-950 shadow-md border border-amber-300/80 flex items-center justify-center shrink-0 overflow-hidden bg-white`}>
+        <img
+          src="/logo.png"
+          alt="زروقي للحلويات ZERROUKI"
+          className="w-full h-full object-cover rounded-full transition-transform hover:scale-105"
+          onError={(e) => {
+            // Fallback if image fails to load
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
       </div>
 
       {showText && (
@@ -35,11 +33,11 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 'md', showText = tr
             <span className={`font-black text-[#1E1B4B] tracking-tight ${dimensions.text}`} style={{ fontFamily: 'Cairo, sans-serif' }}>
               زروقي للحلويات
             </span>
-            <span className="bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
+            <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
               إدارة المحل
             </span>
           </div>
-          <span className="text-xs text-rose-800/80 font-bold">Zerrouki Sweets ERP</span>
+          <span className="text-xs text-rose-800/80 font-bold">Zerrouki Sweets & Chocolates</span>
         </div>
       )}
     </div>
