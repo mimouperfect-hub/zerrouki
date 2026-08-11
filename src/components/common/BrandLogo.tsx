@@ -1,4 +1,5 @@
 import React from 'react';
+import { ZERROUKI_LOGO_DATA_URI } from './logoData';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -21,12 +22,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 'md', showText = tr
     <div className="flex items-center gap-3 select-none">
       <div className={`relative ${dimensions.box} rounded-full p-0.5 bg-gradient-to-br from-amber-400 via-rose-500 to-purple-950 shadow-md border border-amber-300/80 flex items-center justify-center shrink-0 overflow-hidden bg-white`}>
         <img
-          src="/logo.png"
+          src={ZERROUKI_LOGO_DATA_URI}
           alt="زروقي للحلويات ZERROUKI"
           className="w-full h-full object-cover rounded-full transition-transform hover:scale-105"
-          onError={(e) => {
-            (e.target as HTMLElement).style.display = 'none';
-          }}
         />
       </div>
 

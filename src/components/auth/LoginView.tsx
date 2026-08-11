@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
+import { ZERROUKI_LOGO_DATA_URI } from '../common/logoData';
 import { api } from '../../api/client';
 import { User } from '../../types';
 
@@ -48,7 +49,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         {/* Logo & Header */}
         <div className="flex flex-col items-center text-center space-y-3">
           <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-br from-amber-400 via-rose-500 to-purple-950 shadow-2xl border-2 border-amber-300 overflow-hidden bg-white">
-            <img src="/logo.png" alt="زروقي للحلويات ZERROUKI" className="w-full h-full object-cover rounded-full" />
+            <img src={ZERROUKI_LOGO_DATA_URI} alt="زروقي للحلويات ZERROUKI" className="w-full h-full object-cover rounded-full" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-white mt-1 drop-shadow-xs" style={{ fontFamily: 'Cairo, sans-serif' }}>
