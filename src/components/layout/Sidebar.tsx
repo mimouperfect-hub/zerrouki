@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isOpen
       >
         {/* Brand Header */}
         <div className="p-4 border-b border-amber-400/20 flex items-center justify-between bg-black/10">
-          <BrandLogo size="md" />
+          <BrandLogo size="md" textColor="light" />
         </div>
 
         {/* User Card info */}
