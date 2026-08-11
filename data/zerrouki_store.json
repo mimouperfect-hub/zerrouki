@@ -291,7 +291,7 @@
       "pinCode": "1234",
       "avatarUrl": "",
       "createdAt": "2026-08-09T20:34:58.094Z",
-      "lastLoginAt": "2026-08-11T20:22:40.552Z"
+      "lastLoginAt": "2026-08-11T21:34:34.580Z"
     },
     {
       "id": "u-cashier",
@@ -418,6 +418,16 @@
   "payrollRecords": [],
   "promotions": [],
   "auditLogs": [
+    {
+      "id": "al-7fd3ceac",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-11T21:34:34.584Z"
+    },
     {
       "id": "al-509a1e62",
       "userId": "u-owner",

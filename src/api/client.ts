@@ -41,8 +41,15 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
 export const api = {
   // Auth
-  login: (data: { username: string; password?: string }) =>
-    fetchApi<{ token: string; user: any }>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  login: (usernameOrData: string | { username: string; password?: string }, password?: string) => {
+    const payload = typeof usernameOrData === 'string'
+      ? { username: usernameOrData, password }
+      : usernameOrData;
+    return fetchApi<{ token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
   getMe: () => fetchApi<{ user: User; role: any; permissions: string[] }>('/auth/me'),
   verifyPin: (pin: string) => fetchApi<{ success: boolean }>('/auth/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
   updateCredentials: (data: { newUsername?: string; newPassword?: string; currentPassword?: string }) =>

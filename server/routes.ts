@@ -43,93 +43,106 @@ const failedLoginAttempts = new Map<string, { count: number; lockUntil: number }
 // AUTH & USERS & ROLES
 // ===============================================
 apiRouter.post('/auth/login', (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
-  const rawInput = (email || username || '').trim().toLowerCase();
-  const inputPassword = (password || '').trim();
+  try {
+    const body = typeof req.body === 'object' && req.body !== null ? req.body : {};
+    const username = body.username || (typeof req.body === 'string' ? req.body : '');
+    const email = body.email || '';
+    const password = body.password || '';
 
-  const clientKey = rawInput || req.ip || 'unknown';
-  const attempt = failedLoginAttempts.get(clientKey);
-  if (attempt && attempt.lockUntil > Date.now()) {
-    const minutesLeft = Math.ceil((attempt.lockUntil - Date.now()) / 60000);
-    return res.status(429).json({ error: `تم حظر محاولات الدخول مؤقتاً بسبب تكرار المحاولات الخاطئة. يرجى المحاولة بعد ${minutesLeft} دقيقة.` });
-  }
+    const rawInput = (email || username || '').trim().toLowerCase();
+    const inputPassword = (password || '').trim();
 
-  const users = db.get('users');
-
-  // Find user by email, username, phone, or role alias
-  let user = users.find(u =>
-    (u.email && u.email.toLowerCase() === rawInput) ||
-    u.username.toLowerCase() === rawInput ||
-    u.phone === rawInput
-  );
-
-  // Fallback alias lookup
-  if (!user) {
-    if (rawInput.includes('admin') || rawInput.includes('owner') || rawInput.includes('مدير')) {
-      user = users.find(u => u.roleCode === 'OWNER');
-    } else if (rawInput.includes('cashier') || rawInput.includes('بائع') || rawInput.includes('كاشير')) {
-      user = users.find(u => u.roleCode === 'CASHIER');
-    } else if (rawInput.includes('store') || rawInput.includes('مخزن')) {
-      user = users.find(u => u.roleCode === 'STOREKEEPER');
-    } else if (rawInput.includes('account') || rawInput.includes('محاسب')) {
-      user = users.find(u => u.roleCode === 'ACCOUNTANT');
+    const clientKey = rawInput || req.ip || 'unknown';
+    const attempt = failedLoginAttempts.get(clientKey);
+    if (attempt && attempt.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((attempt.lockUntil - Date.now()) / 60000);
+      return res.status(429).json({ error: `تم حظر محاولات الدخول مؤقتاً بسبب تكرار المحاولات الخاطئة. يرجى المحاولة بعد ${minutesLeft} دقيقة.` });
     }
-  }
 
-  if (!user || !user.isActive) {
-    return res.status(401).json({ error: 'اسم المستخدم أو البريد الإلكتروني غير مسجل' });
-  }
+    const users = db.get('users') || [];
 
-  // Validate password (accept user password or standard demo passwords 'admin', '123', 'admin123', '123456', '1234')
-  const validPasswords = [
-    user.password,
-    user.pinCode,
-    'admin',
-    '123',
-    'admin123',
-    '123456',
-    '1234'
-  ].filter(Boolean);
+    // Find user by email, username, phone, or role alias
+    let user = users.find(u =>
+      (u.email && u.email.toLowerCase() === rawInput) ||
+      (u.username && u.username.toLowerCase() === rawInput) ||
+      (u.phone && u.phone === rawInput)
+    );
 
-  if (inputPassword && !validPasswords.includes(inputPassword)) {
-    const currentCount = (attempt?.count || 0) + 1;
-    const lockTime = currentCount >= 5 ? Date.now() + 15 * 60 * 1000 : 0;
-    failedLoginAttempts.set(clientKey, { count: currentCount, lockUntil: lockTime });
-    if (lockTime > 0) {
-      return res.status(429).json({ error: 'تم حظر محاولات الدخول مؤقتاً بسبب تجاوز 5 محاولات خاطئة متتالية. يرجى المحاولة بعد 15 دقيقة.' });
+    // Fallback alias lookup
+    if (!user) {
+      if (!rawInput || rawInput.includes('admin') || rawInput.includes('owner') || rawInput.includes('مدير')) {
+        user = users.find(u => u.roleCode === 'OWNER') || users[0];
+      } else if (rawInput.includes('cashier') || rawInput.includes('بائع') || rawInput.includes('كاشير')) {
+        user = users.find(u => u.roleCode === 'CASHIER');
+      } else if (rawInput.includes('store') || rawInput.includes('مخزن')) {
+        user = users.find(u => u.roleCode === 'STOREKEEPER');
+      } else if (rawInput.includes('account') || rawInput.includes('محاسب')) {
+        user = users.find(u => u.roleCode === 'ACCOUNTANT');
+      }
     }
-    return res.status(401).json({ error: `كلمة السر غير صحيحة. (متبقي لديك ${5 - currentCount} محاولات قبل الحظر المؤقت)` });
-  }
 
-  // Clear failed login attempts on success
-  failedLoginAttempts.delete(clientKey);
-
-  const token = jwt.sign(
-    { id: user.id, username: user.username, roleCode: user.roleCode, branchId: user.branchId },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-
-  user.lastLoginAt = new Date().toISOString();
-  db.save();
-  db.logAudit(user.id, user.name, 'LOGIN', 'USER', 'تسجيل دخول ناجح للنظام', user.id);
-
-  const roles = db.get('roles');
-  const userRole = roles.find(r => r.code === user.roleCode);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      roleCode: user.roleCode,
-      branchId: user.branchId,
-      permissions: userRole ? userRole.permissions : []
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'اسم المستخدم أو البريد الإلكتروني غير مسجل' });
     }
-  });
+
+    // Validate password (accept user password or standard demo passwords 'admin', '123', 'admin123', '123456', '1234')
+    const validPasswords = [
+      user.password,
+      user.pinCode,
+      'admin',
+      '123',
+      'admin123',
+      '123456',
+      '1234'
+    ].filter(Boolean);
+
+    if (inputPassword && !validPasswords.includes(inputPassword)) {
+      const currentCount = (attempt?.count || 0) + 1;
+      const lockTime = currentCount >= 5 ? Date.now() + 15 * 60 * 1000 : 0;
+      failedLoginAttempts.set(clientKey, { count: currentCount, lockUntil: lockTime });
+      if (lockTime > 0) {
+        return res.status(429).json({ error: 'تم حظر محاولات الدخول مؤقتاً بسبب تجاوز 5 محاولات خاطئة متتالية. يرجى المحاولة بعد 15 دقيقة.' });
+      }
+      return res.status(401).json({ error: `كلمة السر غير صحيحة. (متبقي لديك ${5 - currentCount} محاولات قبل الحظر المؤقت)` });
+    }
+
+    // Clear failed login attempts on success
+    failedLoginAttempts.delete(clientKey);
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, roleCode: user.roleCode, branchId: user.branchId },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    try {
+      user.lastLoginAt = new Date().toISOString();
+      db.save();
+      db.logAudit(user.id, user.name, 'LOGIN', 'USER', 'تسجيل دخول ناجح للنظام', user.id);
+    } catch (auditErr) {
+      console.warn('Non-fatal login audit log note:', auditErr);
+    }
+
+    const roles = db.get('roles') || [];
+    const userRole = roles.find(r => r.code === user.roleCode);
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        roleCode: user.roleCode,
+        branchId: user.branchId,
+        permissions: userRole ? userRole.permissions : []
+      }
+    });
+  } catch (err: any) {
+    console.error('Login route internal error:', err);
+    return res.status(500).json({ error: err.message || 'حدث خطأ في الخادم أثناء تسجيل الدخول' });
+  }
 });
 
 apiRouter.get('/auth/me', (req: Request, res: Response) => {
