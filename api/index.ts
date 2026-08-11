@@ -28,4 +28,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// Export app for Vercel Serverless Function
 export default app;
