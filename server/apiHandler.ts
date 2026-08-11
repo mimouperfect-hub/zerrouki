@@ -1,5 +1,5 @@
 import express from 'express';
-import { apiRouter } from '../server/routes';
+import { apiRouter } from './routes';
 
 const app = express();
 
@@ -28,5 +28,4 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Export app for Vercel Serverless Function
 export default app;

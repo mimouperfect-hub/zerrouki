@@ -26,12 +26,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/index.ts
-var index_exports = {};
-__export(index_exports, {
-  default: () => index_default
+// server/apiHandler.ts
+var apiHandler_exports = {};
+__export(apiHandler_exports, {
+  default: () => apiHandler_default
 });
-module.exports = __toCommonJS(index_exports);
+module.exports = __toCommonJS(apiHandler_exports);
 var import_express2 = __toESM(require("express"), 1);
 
 // server/routes.ts
@@ -2766,7 +2766,7 @@ apiRouter.post("/firebase/sync", async (req, res) => {
   }
 });
 
-// api/index.ts
+// server/apiHandler.ts
 var app = (0, import_express2.default)();
 app.use(import_express2.default.json({ limit: "50mb" }));
 app.use(import_express2.default.urlencoded({ extended: true, limit: "50mb" }));
@@ -2788,4 +2788,4 @@ app.use((err, req, res, next) => {
     success: false
   });
 });
-var index_default = app;
+var apiHandler_default = app;
