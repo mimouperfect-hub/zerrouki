@@ -9,17 +9,18 @@ import {
   Employee, AttendanceRecord, LeaveRequest, SalaryAdvance, SalaryBonus,
   SalaryDeduction, PayrollPeriod, PayrollRecord, AuditLog, SystemNotification,
   SystemSettings, Promotion
-} from '../src/types.js';
+} from '../src/types';
 import {
   isFirebaseConnected,
   saveToFirestoreDoc,
   saveEntireCollectionToFirestore,
   fetchCollectionFromFirestore
-} from './firebase.js';
+} from './firebase';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'zerrouki_store.json');
-const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
+const isVercel = !!process.env.VERCEL;
+const DATA_DIR = isVercel ? '/tmp/data' : path.join(process.cwd(), 'data');
+const DB_FILE = isVercel ? '/tmp/data/zerrouki_store.json' : path.join(DATA_DIR, 'zerrouki_store.json');
+const BACKUPS_DIR = isVercel ? '/tmp/data/backups' : path.join(DATA_DIR, 'backups');
 
 export interface DatabaseSchema {
   settings: SystemSettings;
@@ -262,18 +263,30 @@ class StoreDatabase {
   }
 
   private ensureDirectory() {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(BACKUPS_DIR)) {
-      fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      if (!fs.existsSync(BACKUPS_DIR)) {
+        fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+      }
+    } catch (err) {
+      console.warn('Directory creation warning (serverless environment):', err);
     }
   }
 
   private loadData(): DatabaseSchema {
     try {
-      if (fs.existsSync(DB_FILE)) {
-        const fileContent = fs.readFileSync(DB_FILE, 'utf-8');
+      let fileToRead = DB_FILE;
+      if (!fs.existsSync(fileToRead)) {
+        const fallbackRootFile = path.join(process.cwd(), 'data', 'zerrouki_store.json');
+        if (fs.existsSync(fallbackRootFile)) {
+          fileToRead = fallbackRootFile;
+        }
+      }
+
+      if (fs.existsSync(fileToRead)) {
+        const fileContent = fs.readFileSync(fileToRead, 'utf-8');
         const parsed = JSON.parse(fileContent);
         // Guarantee structure safety
         return {
@@ -293,9 +306,10 @@ class StoreDatabase {
 
   private saveDataDirect(dataToSave: DatabaseSchema) {
     try {
+      this.ensureDirectory();
       fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf-8');
     } catch (err) {
-      console.error('Failed to write database file:', err);
+      console.warn('Database save warning (serverless environment note):', err);
     }
   }
 

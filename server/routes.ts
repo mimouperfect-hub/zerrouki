@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { db } from './db.js';
-import { isFirebaseConnected, getFirebaseProjectId } from './firebase.js';
+import { db } from './db';
+import { isFirebaseConnected, getFirebaseProjectId } from './firebase';
 import {
   User, Product, Sale, SaleItem, Purchase, StockMovement, StockMovementType, CashSession,
   Expense, Employee, AttendanceRecord, PayrollRecord, SaleReturn,
   ProductBatch, Supplier, Customer, CustomerPaymentRecord, SystemSettings, StockAdjustment,
   WasteRecord, LeaveRequest, SalaryBonus, SalaryDeduction, Promotion
-} from '../src/types.js';
+} from '../src/types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'zerrouki-sweets-secret-key-2026';
 
