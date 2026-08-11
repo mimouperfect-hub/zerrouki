@@ -1,7 +1,13 @@
 {
-  "short_name": "ZerroukiERP",
-  "name": "مؤسسة زروقي للحلويات - ERP & POS System",
-  "icons": [],
+  "short_name": "زروقي للحلويات",
+  "name": "زروقي للحلويات - Zerrouki Sweets",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
   "start_url": "/",
   "background_color": "#2E1065",
   "theme_color": "#2E1065",
