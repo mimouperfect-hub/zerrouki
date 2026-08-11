@@ -26,7 +26,7 @@ export function initFirebase(): boolean {
       }
       dbInstance = admin.firestore();
       isConnected = true;
-      currentProjectId = serviceAccount.project_id || 'zerrouki-store-cloud';
+      currentProjectId = serviceAccount.project_id || 'zerrouki-b8891';
       console.log(`[Firebase Cloud] Connected via service account JSON file (Project: ${currentProjectId}) 🟢`);
       return true;
     }
