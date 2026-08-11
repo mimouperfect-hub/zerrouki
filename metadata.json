@@ -1,0 +1,6 @@
+{
+  "name": "Zerrouki Sweets Manager",
+  "description": "نظام إدارة محل زروقي للحلويات - POS، المخزون، المبيعات، المشتريات، الخزينة، الرواتب، والتقارير",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,9 @@
+{
+  "short_name": "ZerroukiERP",
+  "name": "مؤسسة زروقي للحلويات - ERP & POS System",
+  "icons": [],
+  "start_url": "/",
+  "background_color": "#2E1065",
+  "theme_color": "#2E1065",
+  "display": "standalone"
+}

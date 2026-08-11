@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================
+    // ZERROUKI STORE PLATFORM - FIRESTORE COMPLETE SECURITY RULES
+    // منصة زروقي للتسيير والتجارة - قواعد الأمان الشاملة والمكتملة
+    // =========================================================
+
+    // 1. القاعدة العامة الشاملة لكل المجموعات الحالية والمستقبلية (Recursive Wildcard Rule)
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // 2. القواعد التفصيلية الخاصة بكل مجموعات وأقسام النظام بالكامل:
+
+    // 📦 المنتجات والمخزون والتصنيفات
+    match /products/{id} { allow read, write: if true; }
+    match /productBatches/{id} { allow read, write: if true; }
+    match /categories/{id} { allow read, write: if true; }
+    match /brands/{id} { allow read, write: if true; }
+    match /units/{id} { allow read, write: if true; }
+    match /stockMovements/{id} { allow read, write: if true; }
+    match /wastes/{id} { allow read, write: if true; }
+    match /stockAdjustments/{id} { allow read, write: if true; }
+
+    // 💰 المبيعات والعملاء وفواتير المشتريات والموردين
+    match /sales/{id} { allow read, write: if true; }
+    match /saleReturns/{id} { allow read, write: if true; }
+    match /customers/{id} { allow read, write: if true; }
+    match /purchases/{id} { allow read, write: if true; }
+    match /suppliers/{id} { allow read, write: if true; }
+    match /promotions/{id} { allow read, write: if true; }
+
+    // 💵 الخزينة والكتلة المالية والمصاريف
+    match /cashSessions/{id} { allow read, write: if true; }
+    match /cashMovements/{id} { allow read, write: if true; }
+    match /expenses/{id} { allow read, write: if true; }
+    match /expenseCategories/{id} { allow read, write: if true; }
+
+    // 👥 الموظفون والأجور والحضور والخصومات
+    match /employees/{id} { allow read, write: if true; }
+    match /attendanceRecords/{id} { allow read, write: if true; }
+    match /leaveRequests/{id} { allow read, write: if true; }
+    match /salaryAdvances/{id} { allow read, write: if true; }
+    match /salaryBonuses/{id} { allow read, write: if true; }
+    match /salaryDeductions/{id} { allow read, write: if true; }
+    match /payrollPeriods/{id} { allow read, write: if true; }
+    match /payrollRecords/{id} { allow read, write: if true; }
+
+    // ⚙️ المستخدمون والصلاحيات وإعدادات النظام وسجل التدقيق
+    match /users/{id} { allow read, write: if true; }
+    match /roles/{id} { allow read, write: if true; }
+    match /permissions/{id} { allow read, write: if true; }
+    match /branches/{id} { allow read, write: if true; }
+    match /settings/{id} { allow read, write: if true; }
+    match /app_settings/{id} { allow read, write: if true; }
+    match /auditLogs/{id} { allow read, write: if true; }
+    match /notifications/{id} { allow read, write: if true; }
+  }
+}

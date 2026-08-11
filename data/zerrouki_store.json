@@ -1,0 +1,543 @@
+{
+  "settings": {
+    "storeNameAr": "مؤسسة زروقي للحلويات",
+    "storeNameFr": "Zerrouki Sweets",
+    "taglineAr": "أرقى أنواع الشوكولاتة والحلويات والمستلزمات",
+    "phone": "0550 12 34 56",
+    "addressAr": "شارع فلسطين، المركز التجاري، الجزائر العاصمة",
+    "currencySymbol": "د.ج",
+    "taxPercentage": 0,
+    "allowNegativeStock": false,
+    "loyaltyPointsPerAmount": 100,
+    "loyaltyPointValueInCurrency": 1,
+    "lowStockAlertThreshold": 10,
+    "expirationWarningDays": 45,
+    "defaultOvertimeMultiplier": 1.25,
+    "managerPin": "1234",
+    "invoiceFooterAr": "شكراً لزيارتكم مؤسسة زروقي للحلويات - بضاعتكم محل اهتمامنا!"
+  },
+  "branches": [
+    {
+      "id": "br-1",
+      "nameAr": "المحل الرئيسي",
+      "addressAr": "الجزائر العاصمة",
+      "phone": "0550123456",
+      "isActive": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "r1",
+      "code": "OWNER",
+      "nameAr": "المدير العام (صاحب المحل)",
+      "descriptionAr": "وصول كامل لكافة صلاحيات النظام والتقارير والنسخ الاحتياطي",
+      "permissions": [
+        "view_dashboard",
+        "view_products",
+        "create_products",
+        "edit_products",
+        "delete_products",
+        "view_stock",
+        "adjust_stock",
+        "create_sale",
+        "view_sales",
+        "cancel_sale",
+        "return_sale",
+        "apply_discount",
+        "create_purchase",
+        "view_purchase",
+        "manage_cash",
+        "create_expense",
+        "view_profit",
+        "manage_customers",
+        "manage_employees",
+        "view_salaries",
+        "manage_payroll",
+        "manage_users",
+        "view_audit_logs",
+        "manage_settings"
+      ],
+      "isSystem": true
+    },
+    {
+      "id": "r2",
+      "code": "MANAGER",
+      "nameAr": "المسؤول التنفيذي",
+      "descriptionAr": "إدارة العمليات اليومية المباشرة (مبيعات، مخزون، مشتريات)",
+      "permissions": [
+        "view_products",
+        "create_products",
+        "edit_products",
+        "delete_products",
+        "view_stock",
+        "adjust_stock",
+        "create_sale",
+        "view_sales",
+        "cancel_sale",
+        "return_sale",
+        "apply_discount",
+        "create_purchase",
+        "view_purchase",
+        "manage_cash",
+        "create_expense",
+        "view_profit",
+        "manage_customers",
+        "manage_employees",
+        "view_salaries",
+        "manage_payroll"
+      ],
+      "isSystem": true
+    },
+    {
+      "id": "r3",
+      "code": "CASHIER",
+      "nameAr": "أمين الصندوق (الكاشير/البائع)",
+      "descriptionAr": "واجهة نقطة البيع POS والبيع المباشر والعملاء فقط",
+      "permissions": [
+        "create_sale",
+        "manage_customers"
+      ],
+      "isSystem": true
+    },
+    {
+      "id": "r4",
+      "code": "STOREKEEPER",
+      "nameAr": "مسؤول المخزن",
+      "descriptionAr": "إدارة المنتجات، الكميات، التالف، المشتريات واستلام الشحنات",
+      "permissions": [
+        "view_products",
+        "create_products",
+        "edit_products",
+        "view_stock",
+        "adjust_stock",
+        "create_purchase",
+        "view_purchase"
+      ],
+      "isSystem": true
+    },
+    {
+      "id": "r5",
+      "code": "ACCOUNTANT",
+      "nameAr": "المحاسب",
+      "descriptionAr": "التقارير المالية، الأرباح، المصاريف، الرواتب، الديون والسيولة",
+      "permissions": [
+        "manage_cash",
+        "create_expense",
+        "view_profit",
+        "manage_customers",
+        "view_salaries",
+        "manage_payroll"
+      ],
+      "isSystem": true
+    }
+  ],
+  "permissions": [
+    {
+      "id": "p1",
+      "code": "view_dashboard",
+      "nameAr": "عرض لوحة التحكم",
+      "categoryAr": "الرئيسية"
+    },
+    {
+      "id": "p2",
+      "code": "view_products",
+      "nameAr": "عرض المنتجات",
+      "categoryAr": "المنتجات"
+    },
+    {
+      "id": "p3",
+      "code": "create_products",
+      "nameAr": "إضافة منتجات",
+      "categoryAr": "المنتجات"
+    },
+    {
+      "id": "p4",
+      "code": "edit_products",
+      "nameAr": "تعديل المنتجات",
+      "categoryAr": "المنتجات"
+    },
+    {
+      "id": "p5",
+      "code": "delete_products",
+      "nameAr": "تعطيل/حذف المنتجات",
+      "categoryAr": "المنتجات"
+    },
+    {
+      "id": "p6",
+      "code": "view_stock",
+      "nameAr": "عرض المخزون",
+      "categoryAr": "المخزون"
+    },
+    {
+      "id": "p7",
+      "code": "adjust_stock",
+      "nameAr": "تعديل وحركات المخزون",
+      "categoryAr": "المخزون"
+    },
+    {
+      "id": "p8",
+      "code": "create_sale",
+      "nameAr": "إجراء مبيعات POS",
+      "categoryAr": "المبيعات"
+    },
+    {
+      "id": "p9",
+      "code": "view_sales",
+      "nameAr": "عرض الفواتير والمبيعات",
+      "categoryAr": "المبيعات"
+    },
+    {
+      "id": "p10",
+      "code": "cancel_sale",
+      "nameAr": "إلغاء الفواتير",
+      "categoryAr": "المبيعات"
+    },
+    {
+      "id": "p11",
+      "code": "return_sale",
+      "nameAr": "معالجة المرتجعات",
+      "categoryAr": "المبيعات"
+    },
+    {
+      "id": "p12",
+      "code": "apply_discount",
+      "nameAr": "إعطاء خصومات",
+      "categoryAr": "المبيعات"
+    },
+    {
+      "id": "p13",
+      "code": "create_purchase",
+      "nameAr": "إجراء مشتريات",
+      "categoryAr": "المشتريات"
+    },
+    {
+      "id": "p14",
+      "code": "view_purchase",
+      "nameAr": "عرض المشتريات والموردين",
+      "categoryAr": "المشتريات"
+    },
+    {
+      "id": "p15",
+      "code": "manage_cash",
+      "nameAr": "فتح وإغلاق الصندوق",
+      "categoryAr": "الخزينة"
+    },
+    {
+      "id": "p16",
+      "code": "create_expense",
+      "nameAr": "تسجيل مصاريف",
+      "categoryAr": "المالية"
+    },
+    {
+      "id": "p17",
+      "code": "view_profit",
+      "nameAr": "عرض الأرباح والتقارير المالية",
+      "categoryAr": "المالية"
+    },
+    {
+      "id": "p18",
+      "code": "manage_customers",
+      "nameAr": "إدارة العملاء والديون",
+      "categoryAr": "العملاء"
+    },
+    {
+      "id": "p19",
+      "code": "manage_employees",
+      "nameAr": "إدارة الموظفين والحضور",
+      "categoryAr": "الموظفين"
+    },
+    {
+      "id": "p20",
+      "code": "view_salaries",
+      "nameAr": "عرض الرواتب والأجور",
+      "categoryAr": "الرواتب"
+    },
+    {
+      "id": "p21",
+      "code": "manage_payroll",
+      "nameAr": "إعداد ودفع الرواتب",
+      "categoryAr": "الرواتب"
+    },
+    {
+      "id": "p22",
+      "code": "manage_users",
+      "nameAr": "إدارة المستخدمين والصلاحيات",
+      "categoryAr": "الأمان"
+    },
+    {
+      "id": "p23",
+      "code": "view_audit_logs",
+      "nameAr": "عرض سجل العمليات",
+      "categoryAr": "الأمان"
+    },
+    {
+      "id": "p24",
+      "code": "manage_settings",
+      "nameAr": "إعدادات النظام والنسخ الاحتياطي",
+      "categoryAr": "النظام"
+    }
+  ],
+  "users": [
+    {
+      "id": "u-owner",
+      "username": "BRAHIME",
+      "email": "admin@zerrouki.dz",
+      "password": "admin",
+      "name": "المدير العام (صاحب المحل)",
+      "phone": "0550123456",
+      "roleCode": "OWNER",
+      "branchId": "br-1",
+      "isActive": true,
+      "pinCode": "1234",
+      "avatarUrl": "",
+      "createdAt": "2026-08-09T20:34:58.094Z",
+      "lastLoginAt": "2026-08-11T20:22:40.552Z"
+    },
+    {
+      "id": "u-cashier",
+      "username": "cashier",
+      "email": "cashier@zerrouki.dz",
+      "password": "123",
+      "name": "البائع (الكاشير)",
+      "phone": "0661998877",
+      "roleCode": "CASHIER",
+      "branchId": "br-1",
+      "isActive": true,
+      "createdAt": "2026-08-09T20:34:58.095Z",
+      "lastLoginAt": "2026-08-10T18:15:10.157Z"
+    },
+    {
+      "id": "u-store",
+      "username": "storekeeper",
+      "email": "store@zerrouki.dz",
+      "password": "123",
+      "name": "مسؤول المخزن",
+      "phone": "0770554433",
+      "roleCode": "STOREKEEPER",
+      "branchId": "br-1",
+      "isActive": true,
+      "createdAt": "2026-08-09T20:34:58.095Z",
+      "lastLoginAt": "2026-08-10T18:16:08.767Z"
+    },
+    {
+      "id": "u-accountant",
+      "username": "accountant",
+      "email": "accountant@zerrouki.dz",
+      "password": "123",
+      "name": "المحاسب المالي",
+      "phone": "0552331122",
+      "roleCode": "ACCOUNTANT",
+      "branchId": "br-1",
+      "isActive": true,
+      "createdAt": "2026-08-09T20:34:58.095Z",
+      "lastLoginAt": "2026-08-10T18:15:39.379Z"
+    }
+  ],
+  "categories": [],
+  "brands": [],
+  "units": [
+    {
+      "id": "u1",
+      "nameAr": "قطعة (Unité)",
+      "code": "PCS"
+    },
+    {
+      "id": "u2",
+      "nameAr": "علبة (Boîte)",
+      "code": "BOX"
+    },
+    {
+      "id": "u3",
+      "nameAr": "كرتونة (Carton)",
+      "code": "CTN"
+    },
+    {
+      "id": "u4",
+      "nameAr": "كيلوغرام (Kg)",
+      "code": "KG"
+    }
+  ],
+  "products": [],
+  "productBatches": [],
+  "stockMovements": [],
+  "wastes": [],
+  "stockAdjustments": [],
+  "suppliers": [],
+  "purchases": [],
+  "customers": [],
+  "customerPayments": [],
+  "sales": [],
+  "saleReturns": [],
+  "cashSessions": [],
+  "cashMovements": [],
+  "expenseCategories": [
+    {
+      "id": "ec-1",
+      "nameAr": "الكراء والإيجار",
+      "code": "RENT"
+    },
+    {
+      "id": "ec-2",
+      "nameAr": "الكهرباء والغاز والماء",
+      "code": "UTILITIES"
+    },
+    {
+      "id": "ec-3",
+      "nameAr": "الانترنت والهاتف",
+      "code": "COMMUNICATION"
+    },
+    {
+      "id": "ec-4",
+      "nameAr": "الصيانة والإصلاحات",
+      "code": "MAINTENANCE"
+    },
+    {
+      "id": "ec-5",
+      "nameAr": "المستلزمات والتغليف",
+      "code": "PACKAGING"
+    },
+    {
+      "id": "ec-6",
+      "nameAr": "رواتب الموظفين",
+      "code": "SALARIES"
+    },
+    {
+      "id": "ec-7",
+      "nameAr": "مصاريف نثرية وطارئة",
+      "code": "MISC"
+    }
+  ],
+  "expenses": [],
+  "employees": [],
+  "attendanceRecords": [],
+  "leaveRequests": [],
+  "salaryAdvances": [],
+  "salaryBonuses": [],
+  "salaryDeductions": [],
+  "payrollPeriods": [],
+  "payrollRecords": [],
+  "promotions": [],
+  "auditLogs": [
+    {
+      "id": "al-509a1e62",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-11T20:22:40.585Z"
+    },
+    {
+      "id": "al-8f836745",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-11T19:42:04.071Z"
+    },
+    {
+      "id": "al-337237ea",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-10T18:50:57.089Z"
+    },
+    {
+      "id": "al-39f1d323",
+      "userId": "u-store",
+      "userName": "مسؤول المخزن",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-store",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-10T18:16:08.770Z"
+    },
+    {
+      "id": "al-e4f0a250",
+      "userId": "u-accountant",
+      "userName": "المحاسب المالي",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-accountant",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-10T18:15:39.387Z"
+    },
+    {
+      "id": "al-068a53fa",
+      "userId": "u-cashier",
+      "userName": "البائع (الكاشير)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-cashier",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-10T18:15:10.158Z"
+    },
+    {
+      "id": "al-2b548d15",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "UPDATE_CREDENTIALS",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تم تغيير بيانات الدخول للحساب: BRAHIME",
+      "createdAt": "2026-08-10T18:13:06.634Z"
+    },
+    {
+      "id": "al-7adadd73",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-09T20:46:09.174Z"
+    },
+    {
+      "id": "al-8ff99db0",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-09T20:45:57.128Z"
+    },
+    {
+      "id": "al-b207207a",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-09T20:45:26.389Z"
+    },
+    {
+      "id": "al-a85514f3",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-09T20:44:47.747Z"
+    },
+    {
+      "id": "al-28bc1a82",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-09T20:41:44.695Z"
+    }
+  ],
+  "notifications": []
+}
