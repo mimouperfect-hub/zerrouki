@@ -159,7 +159,7 @@ function getInitialSeedData(): DatabaseSchema {
     users: [
       {
         id: 'u-owner',
-        username: 'owner',
+        username: 'BRAHIME',
         email: 'admin@zerrouki.dz',
         password: 'admin',
         name: 'المدير العام (صاحب المحل)',

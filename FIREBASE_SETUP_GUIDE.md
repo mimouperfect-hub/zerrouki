@@ -46,6 +46,7 @@ service cloud.firestore {
     match /sales/{id} { allow read, write: if true; }
     match /saleReturns/{id} { allow read, write: if true; }
     match /customers/{id} { allow read, write: if true; }
+    match /customerPayments/{id} { allow read, write: if true; }
     match /purchases/{id} { allow read, write: if true; }
     match /suppliers/{id} { allow read, write: if true; }
     match /promotions/{id} { allow read, write: if true; }

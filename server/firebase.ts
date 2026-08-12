@@ -110,20 +110,29 @@ export async function deleteFromFirestoreDoc(collectionName: string, docId: stri
 export async function saveEntireCollectionToFirestore(collectionName: string, items: any[]): Promise<boolean> {
   const db = getFirestoreDb();
   if (!db || !Array.isArray(items)) return false;
-  try {
-    const batch = db.batch();
-    const collectionRef = db.collection(collectionName);
-    
-    // Firestore batch limit is 500 ops
-    const chunk = items.slice(0, 450);
-    chunk.forEach(item => {
-      if (item && item.id) {
-        const docRef = collectionRef.doc(String(item.id));
-        batch.set(docRef, item, { merge: true });
-      }
-    });
+  if (items.length === 0) return true;
 
-    await batch.commit();
+  try {
+    const collectionRef = db.collection(collectionName);
+    const chunkSize = 400;
+
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const batch = db.batch();
+      let count = 0;
+
+      chunk.forEach(item => {
+        if (item && item.id !== undefined && item.id !== null) {
+          const docRef = collectionRef.doc(String(item.id));
+          batch.set(docRef, item, { merge: true });
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+      }
+    }
     return true;
   } catch (err: any) {
     console.error(`[Firebase Cloud] Failed to save collection ${collectionName}:`, err.message);

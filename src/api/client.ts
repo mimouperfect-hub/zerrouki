@@ -14,10 +14,15 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`/api${endpoint}`, {
-    ...options,
-    headers
-  });
+  let response: Response;
+  try {
+    response = await fetch(`/api${endpoint}`, {
+      ...options,
+      headers
+    });
+  } catch (netErr: any) {
+    throw new Error('خطأ في الاتصال بالخادم. يرجى التأكد من تشغيل السيرفر واستقرار شبكة الاتصال.');
+  }
 
   const contentType = response.headers.get('content-type') || '';
   const text = await response.text();
