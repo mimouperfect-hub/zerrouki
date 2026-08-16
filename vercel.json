@@ -3,7 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.ts": {
+    "api/*.ts": {
+      "includeFiles": "data/**"
+    },
+    "api/*.js": {
       "includeFiles": "data/**"
     }
   },
