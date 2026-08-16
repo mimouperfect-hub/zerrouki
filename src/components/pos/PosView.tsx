@@ -37,6 +37,7 @@ export const PosView: React.FC = () => {
   // Manual / Camera Barcode Modal / Toast
   const [showManualBarcodeModal, setShowManualBarcodeModal] = useState(false);
   const [showCameraScannerModal, setShowCameraScannerModal] = useState(false);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -302,7 +303,7 @@ export const PosView: React.FC = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden bg-[#FFF9F2]">
+    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden bg-[#FFF9F2] pb-16 md:pb-0 relative">
       {/* Printable thermal receipt styling container */}
       <style>{`
         @media print {
@@ -327,35 +328,35 @@ export const PosView: React.FC = () => {
       `}</style>
 
       {/* Main Left Section: Search Bar & Products Grid */}
-      <div className="flex-1 flex flex-col p-4 space-y-3 overflow-hidden border-l border-purple-100">
+      <div className="flex-1 flex flex-col p-3 sm:p-4 space-y-3 overflow-hidden border-l border-purple-100">
         
         {/* Top Header & Barcode Search Bar */}
-        <div className="bg-white p-3 rounded-2xl border border-purple-100 shadow-xs flex flex-col sm:flex-row items-center gap-3 shrink-0">
+        <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-purple-100 shadow-xs flex flex-wrap items-center gap-2 shrink-0">
           
           {/* Active Scanner Indicator */}
-          <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-2 rounded-xl border border-emerald-200 shrink-0">
+          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-2 rounded-xl border border-emerald-200 shrink-0">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
-            <span className="text-xs font-black">الباركود نشط 🟢</span>
+            <span className="text-xs font-black hidden sm:inline">الباركود نشط 🟢</span>
           </div>
 
           {/* Search Box */}
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="relative flex-1 min-w-[140px]">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث باسم المنتج أو امسح الباركود..."
-              className="w-full pr-10 pl-9 py-2.5 bg-[#FFFBF7] border border-amber-200/80 rounded-xl text-xs font-bold text-purple-950 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition-all"
+              placeholder="ابحث بالاسم أو الباركود..."
+              className="w-full pr-9 pl-7 py-2 bg-[#FFFBF7] border border-amber-200/80 rounded-xl text-xs font-bold text-purple-950 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -365,19 +366,21 @@ export const PosView: React.FC = () => {
           {/* Camera Phone Barcode Scanner Button */}
           <button
             onClick={() => setShowCameraScannerModal(true)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black text-xs flex items-center justify-center gap-2 hover:brightness-110 transition-all shrink-0 shadow-md active:scale-98 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 hover:brightness-110 transition-all shrink-0 shadow-md active:scale-98 cursor-pointer"
+            title="مسح كود المنتج باستخدام كاميرا الهاتف"
           >
             <Camera className="w-4 h-4 text-white" />
-            <span>مسح بكاميرا الهاتف 📷</span>
+            <span className="text-[11px]">كاميرا 📷</span>
           </button>
 
           {/* Manual Barcode Button */}
           <button
             onClick={() => setShowManualBarcodeModal(true)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-900 to-indigo-900 text-amber-300 font-black text-xs flex items-center justify-center gap-2 hover:from-purple-800 hover:to-indigo-800 transition-all shrink-0 shadow-md active:scale-98 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-900 to-indigo-900 text-amber-300 font-black text-xs flex items-center justify-center gap-1.5 hover:from-purple-800 hover:to-indigo-800 transition-all shrink-0 shadow-md active:scale-98 cursor-pointer"
+            title="إدخال كود الباركود يدويـاً"
           >
             <Scan className="w-4 h-4 text-amber-400" />
-            <span>إدخال باركود</span>
+            <span className="text-[11px]">باركود</span>
           </button>
         </div>
 
@@ -517,8 +520,8 @@ export const PosView: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Sidebar: POS Cart Terminal & Checkout */}
-      <div className="w-full md:w-96 bg-white flex flex-col h-full border-r border-purple-100 shadow-xl shrink-0">
+      {/* Right Sidebar: POS Cart Terminal & Checkout (Desktop md+ view) */}
+      <div className="hidden md:flex w-96 bg-white flex-col h-full border-r border-purple-100 shadow-xl shrink-0">
         
         {/* Cart Header */}
         <div className="p-3.5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50">
@@ -976,6 +979,198 @@ export const PosView: React.FC = () => {
         <div className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-900 to-indigo-900 text-amber-300 px-4 py-3 rounded-2xl shadow-2xl text-xs font-black flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-200 border border-amber-300/40">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Mobile Floating Cart Action Bar (Visible only on mobile screens < md) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-purple-200 p-2.5 shadow-2xl flex items-center justify-between gap-2">
+        <button
+          onClick={() => setIsMobileCartOpen(true)}
+          className="flex-1 py-3 px-3.5 rounded-2xl bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-amber-300 font-black text-xs shadow-lg flex items-center justify-between cursor-pointer border border-amber-300/30"
+        >
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <ShoppingCart className="w-5 h-5 text-amber-400" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              )}
+            </div>
+            <span>سلة البيع</span>
+          </div>
+
+          <span className="font-mono text-xs font-black text-amber-300">
+            {grandTotal.toLocaleString()} د.ج 🔼
+          </span>
+        </button>
+
+        {cart.length > 0 && (
+          <button
+            onClick={handleCheckout}
+            disabled={isCheckoutLoading}
+            className="py-3 px-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black text-xs shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            {isCheckoutLoading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                <span>إتمام البيع ⚡</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Fullscreen Cart Modal / Bottom Sheet Drawer */}
+      {isMobileCartOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs md:hidden flex flex-col justify-end animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl border-t border-purple-200 animate-in slide-in-from-bottom duration-200">
+            {/* Modal Header */}
+            <div className="p-3.5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-950 to-indigo-900 text-white rounded-t-3xl">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-amber-300" />
+                <h3 className="font-black text-xs text-white">سلة البيع ودفع الفاتورة 🛒</h3>
+                <span className="bg-amber-400 text-purple-950 text-xs font-black px-2 py-0.5 rounded-full">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)} قطعة
+                </span>
+              </div>
+              <button
+                onClick={() => setIsMobileCartOpen(false)}
+                className="p-1.5 text-slate-300 hover:text-white bg-white/10 rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mobile Cart Content */}
+            <div className="overflow-y-auto p-4 space-y-3.5 max-h-[70vh]">
+              {/* Customer Selector */}
+              <div className="p-3 border border-amber-200 rounded-2xl bg-[#FFFBF7]">
+                <label className="text-xs font-black text-purple-950 block mb-1.5">
+                  👤 اختيار العميل أو البيع المباشر:
+                </label>
+                <select
+                  value={selectedCustomerId}
+                  onChange={(e) => {
+                    setSelectedCustomerId(e.target.value);
+                    if (!e.target.value) setPaymentMethod('CASH');
+                  }}
+                  className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs font-black text-purple-950 outline-none"
+                >
+                  <option value="">زبون عادي (دفع نقدي مباشر بدون اسم)</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nameAr} ({c.phone || 'بدون هاتف'}) {c.totalDebt > 0 ? `- دين: ${c.totalDebt} د.ج` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Cart Items List */}
+              <div className="space-y-2">
+                {cart.length === 0 ? (
+                  <div className="text-center p-6 text-slate-400 font-bold text-xs bg-slate-50 rounded-2xl">
+                    سلة البيع فارغة حالياً. اضغط على المنتجات لإضافتها!
+                  </div>
+                ) : (
+                  cart.map((item) => {
+                    const itemKey = getItemKey(item);
+                    const unitPrice = item.selectedVariant ? item.selectedVariant.price : item.product.sellingPrice;
+                    return (
+                      <div key={itemKey} className="p-3 bg-[#FFFBF7] rounded-2xl border border-purple-100 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-xs font-black text-purple-950 truncate">{item.product.nameAr}</h5>
+                          {item.selectedVariant && (
+                            <span className="inline-block bg-amber-200 text-purple-950 text-[10px] font-black px-1.5 py-0.5 rounded-md mt-0.5">
+                              {item.selectedVariant.nameAr}
+                            </span>
+                          )}
+                          <div className="text-[11px] font-mono text-slate-600 mt-0.5 font-bold">
+                            {unitPrice.toLocaleString()} د.ج × {item.quantity} = <span className="font-black text-rose-600">{(unitPrice * item.quantity).toLocaleString()} د.ج</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 bg-white rounded-xl border border-purple-100 p-1">
+                          <button onClick={() => updateQuantity(itemKey, -1)} className="p-1 text-purple-950">
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-xs font-black px-1.5">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(itemKey, 1)} className="p-1 text-purple-950">
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <button onClick={() => removeFromCart(itemKey)} className="p-1 text-rose-600">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => setPaymentMethod('CASH')}
+                  className={`py-3 px-3 rounded-xl text-xs font-black border flex items-center justify-center gap-1.5 cursor-pointer ${
+                    paymentMethod === 'CASH'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                      : 'bg-white text-purple-950 border-purple-100'
+                  }`}
+                >
+                  <Wallet className="w-4 h-4" />
+                  <span>دفع نقداً (كاش)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!selectedCustomerId) {
+                      showToast('⚠️ يجب اختيار اسم عميل مسجل لتسجيل البيع بالدين');
+                      return;
+                    }
+                    setPaymentMethod('CREDIT');
+                  }}
+                  className={`py-3 px-3 rounded-xl text-xs font-black border flex items-center justify-center gap-1.5 cursor-pointer ${
+                    paymentMethod === 'CREDIT'
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-md'
+                      : 'bg-white text-purple-950 border-purple-100'
+                  } ${!selectedCustomerId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>بيع بالدين</span>
+                </button>
+              </div>
+
+              {/* Total & Checkout */}
+              <div className="bg-purple-950 text-white p-4 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center text-xs font-black">
+                  <span>المجموع النهائي للفاتورة:</span>
+                  <span className="text-amber-300 text-base font-mono font-black">{grandTotal.toLocaleString()} د.ج</span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    handleCheckout();
+                    setIsMobileCartOpen(false);
+                  }}
+                  disabled={cart.length === 0 || isCheckoutLoading}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black text-xs shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isCheckoutLoading ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>إتمام البيع واستخراج الفاتورة ({grandTotal.toLocaleString()} د.ج) ✨</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
