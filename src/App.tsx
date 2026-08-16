@@ -3,6 +3,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { LoginView } from './components/auth/LoginView';
 import { ActiveView, User } from './types';
+import { ScanAttendanceModal } from './components/employees/ScanAttendanceModal';
 
 import { DashboardView } from './components/dashboard/DashboardView';
 import { PosView } from './components/pos/PosView';
@@ -25,6 +26,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeView, setActiveView] = useState<ActiveView>('DASHBOARD');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isScanAttendanceOpen, setIsScanAttendanceOpen] = useState(false);
 
   useEffect(() => {
     // Check saved user session
@@ -197,6 +199,7 @@ export default function App() {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         currentUser={currentUser}
         onLogout={handleLogout}
+        onOpenScanAttendance={() => setIsScanAttendanceOpen(true)}
       />
 
       {/* Main Body with Sidebar + View */}
@@ -216,6 +219,15 @@ export default function App() {
           {renderCurrentView()}
         </main>
       </div>
+
+      {/* Global QR Attendance Scanner Modal for All Employees */}
+      <ScanAttendanceModal
+        isOpen={isScanAttendanceOpen}
+        onClose={() => setIsScanAttendanceOpen(false)}
+        onScanSuccess={() => {
+          // Toast or refresh notification
+        }}
+      />
     </div>
   );
 }

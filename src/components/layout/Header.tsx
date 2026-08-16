@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { Bell, Menu, LogOut, User as UserIcon, Camera } from 'lucide-react';
 import { ActiveView, User } from '../../types';
 
 interface HeaderProps {
@@ -8,9 +8,17 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   currentUser?: User | null;
   onLogout?: () => void;
+  onOpenScanAttendance?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, onToggleSidebar, currentUser, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({
+  activeView,
+  onNavigate,
+  onToggleSidebar,
+  currentUser,
+  onLogout,
+  onOpenScanAttendance
+}) => {
   return (
     <header className="relative bg-white/90 backdrop-blur-md border-b border-purple-100 h-16 px-4 md:px-6 flex items-center justify-between shrink-0 z-20 shadow-sm">
       {/* Top Rainbow Accent Line */}
@@ -30,6 +38,19 @@ export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, onToggle
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Quick QR Attendance Scan Button */}
+        {onOpenScanAttendance && (
+          <button
+            onClick={onOpenScanAttendance}
+            className="px-3 py-2 rounded-2xl bg-gradient-to-r from-purple-900 to-indigo-900 text-amber-300 hover:from-purple-800 hover:to-indigo-800 transition-all flex items-center gap-1.5 text-xs font-black shadow-md active:scale-95 cursor-pointer border border-amber-300/30"
+            title="مسح رمز QR لتسجيل الحضور أو الانصراف اليومي"
+          >
+            <Camera className="w-4 h-4 text-amber-400" />
+            <span className="hidden md:inline">مسح QR الحضور 📷</span>
+            <span className="md:hidden">QR 📷</span>
+          </button>
+        )}
+
         {/* User Info Pill */}
         {currentUser && (
           <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 via-rose-50 to-purple-50 border border-amber-200/80 px-3 py-1.5 rounded-2xl text-xs font-black text-purple-950 shadow-xs">
