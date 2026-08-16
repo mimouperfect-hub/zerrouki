@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   UserCheck, Plus, Phone, Calendar, DollarSign, Award, Clock, QrCode, Camera,
   Printer, Settings, CheckCircle2, AlertTriangle, ShieldCheck, RefreshCw, Filter, Search,
-  Check, FileText, User, ChevronLeft, BarChart2
+  Check, FileText, User, ChevronLeft, BarChart2, Trash2, Edit, Key, Lock, Mail, UserPlus, Shield
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { Employee, AttendanceRecord, User as UserType } from '../../types';
@@ -19,13 +19,20 @@ export const EmployeesView: React.FC = () => {
   const [systemUsers, setSystemUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // New Employee Modal state
-  const [isNewEmpModalOpen, setIsNewEmpModalOpen] = useState(false);
+  // Employee Modal state (Create / Edit)
+  const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
+  const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [fullNameAr, setFullNameAr] = useState('');
   const [phone, setPhone] = useState('');
   const [positionAr, setPositionAr] = useState('كاشير');
   const [baseSalary, setBaseSalary] = useState(40000);
   const [commissionRatePercent, setCommissionRatePercent] = useState(0);
+
+  // System User Login Credentials for Employee
+  const [createAccount, setCreateAccount] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [userRoleCode, setUserRoleCode] = useState('CASHIER');
 
   // Manager QR Modal State
   const [isManagerQRModalOpen, setIsManagerQRModalOpen] = useState(false);
@@ -41,6 +48,9 @@ export const EmployeesView: React.FC = () => {
   // Manual Attendance Modal State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
+  // Custom Delete Confirmation Modal State
+  const [empToDeleteConfirm, setEmpToDeleteConfirm] = useState<Employee | null>(null);
+
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmpFilter, setSelectedEmpFilter] = useState('');
@@ -53,14 +63,15 @@ export const EmployeesView: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [emps, atts, qrInfo, auditOrUsers] = await Promise.all([
+      const [emps, atts, qrInfo, usersList] = await Promise.all([
         api.getEmployees().catch(() => []),
         api.getAttendance().catch(() => []),
         api.getManagerAttendanceQR().catch(() => ({ qrToken: 'ZERROUKI_ATTENDANCE_MAIN_STORE_2026', storeName: 'مؤسسة زروقي للحلويات' })),
-        api.getAuditLogs().catch(() => [])
+        api.getUsers().catch(() => [])
       ]);
       setEmployees(emps);
       setAttendanceRecords(atts);
+      setSystemUsers(usersList);
       if (qrInfo?.qrToken) setManagerQRToken(qrInfo.qrToken);
       if (qrInfo?.storeName) setStoreName(qrInfo.storeName);
     } catch (e) {
@@ -70,26 +81,111 @@ export const EmployeesView: React.FC = () => {
     }
   };
 
-  const handleCreateEmployee = async (e: React.FormEvent) => {
+  const openNewEmployeeModal = () => {
+    setEditingEmp(null);
+    setFullNameAr('');
+    setPhone('');
+    setPositionAr('كاشير');
+    setBaseSalary(40000);
+    setCommissionRatePercent(0);
+    setCreateAccount(true);
+    setUsername('');
+    setPassword('');
+    setUserRoleCode('CASHIER');
+    setIsEmpModalOpen(true);
+  };
+
+  const openEditEmployeeModal = (emp: Employee) => {
+    setEditingEmp(emp);
+    setFullNameAr(emp.fullNameAr || '');
+    setPhone(emp.phone || '');
+    setPositionAr(emp.positionAr || 'كاشير');
+    setBaseSalary(emp.baseSalary || 40000);
+    setCommissionRatePercent(emp.commissionRatePercent || 0);
+
+    const linkedUser = emp.userId ? systemUsers.find((u) => u.id === emp.userId) : null;
+    if (linkedUser) {
+      setCreateAccount(true);
+      setUsername(linkedUser.username || linkedUser.email || '');
+      setPassword('');
+      setUserRoleCode(linkedUser.roleCode || 'CASHIER');
+    } else {
+      setCreateAccount(false);
+      setUsername('');
+      setPassword('');
+      setUserRoleCode('CASHIER');
+    }
+    setIsEmpModalOpen(true);
+  };
+
+  const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createEmployee({
-        fullNameAr,
-        phone,
-        positionAr,
-        baseSalary,
-        commissionRatePercent,
-        workStartTime: '08:00',
-        workEndTime: '17:00',
-        offDays: ['الجمعة'],
-        lateToleranceMinutes: 15
-      });
-      setIsNewEmpModalOpen(false);
-      setFullNameAr('');
-      setPhone('');
-      loadData();
+      if (editingEmp) {
+        await api.updateEmployee(editingEmp.id, {
+          fullNameAr,
+          phone,
+          positionAr,
+          baseSalary,
+          commissionRatePercent,
+          createAccount,
+          username,
+          password,
+          userRoleCode
+        });
+      } else {
+        await api.createEmployee({
+          fullNameAr,
+          phone,
+          positionAr,
+          baseSalary,
+          commissionRatePercent,
+          workStartTime: '08:00',
+          workEndTime: '17:00',
+          offDays: ['الجمعة'],
+          lateToleranceMinutes: 15,
+          createAccount,
+          username,
+          password,
+          userRoleCode
+        });
+      }
+      setIsEmpModalOpen(false);
+      setEditingEmp(null);
+      await loadData();
     } catch (err: any) {
-      alert(err.message || 'فشلت إضافة الموظف');
+      alert(err.message || 'فشلت عملية حفظ البيانات');
+    }
+  };
+
+  const handleDeleteEmployee = (emp: Employee) => {
+    console.log('🔍 [فتح نافذة تأكيد الحذف للموظف]:', { id: emp.id, name: emp.fullNameAr });
+    setEmpToDeleteConfirm(emp);
+  };
+
+  const confirmExecutionDeleteEmployee = async () => {
+    if (!empToDeleteConfirm) return;
+    const targetEmp = empToDeleteConfirm;
+    setEmpToDeleteConfirm(null);
+
+    console.group('🔍 [تنفيذ حذف الموظف - EXECUTION]');
+    console.log('1. بيانات الموظف الجاري حذفه:', targetEmp);
+
+    try {
+      console.log('2. إرسال طلب الحذف إلى API:', `/api/employees/${targetEmp.id}`);
+      setEmployees((prev) => prev.filter((e) => e.id !== targetEmp.id));
+
+      const res = await api.deleteEmployee(targetEmp.id);
+      console.log('3. ✅ استجابة الخادم بنجاح:', res);
+
+      await loadData();
+      console.log('4. ✅ تم تحديث البيانات بنجاح.');
+    } catch (err: any) {
+      console.error('💥 [خطأ في عملية الحذف]:', err);
+      alert(`خطأ في الحذف: ${err?.message || err}`);
+      await loadData();
+    } finally {
+      console.groupEnd();
     }
   };
 
@@ -123,10 +219,10 @@ export const EmployeesView: React.FC = () => {
         <div>
           <h1 className="text-xl font-black text-purple-950 flex items-center gap-2">
             <UserCheck className="w-6 h-6 text-amber-500" />
-            تتبع حضور الموظفين وأوقات العمل اليومية والعطل المعتمدة
+            تتبع حضور الموظفين وإدارة حسابات الدخول وساعات العمل
           </h1>
           <p className="text-xs text-slate-500 font-bold mt-1">
-            سجل منصف ومفصل لحساب ساعات عمل كل عامل، أيام العطل، التأخيرات، والإجازات لحفظ الحقوق وعدم الظلم
+            إدارة الموظفين، تحديد مرتباتهم وحسابات دخولهم للنظام وحذف أو تعديل الموظفين بسهولة
           </p>
         </div>
 
@@ -160,7 +256,7 @@ export const EmployeesView: React.FC = () => {
 
           {/* New Employee */}
           <button
-            onClick={() => setIsNewEmpModalOpen(true)}
+            onClick={openNewEmployeeModal}
             className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black text-xs shadow-md hover:brightness-110 transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 text-white" />
@@ -204,7 +300,7 @@ export const EmployeesView: React.FC = () => {
           }`}
         >
           <UserCheck className="w-4 h-4" />
-          <span>دليل وعقود وساعات الموظفين ({employees.length})</span>
+          <span>دليل وعقود وحسابات الموظفين ({employees.length})</span>
         </button>
       </div>
 
@@ -417,7 +513,6 @@ export const EmployeesView: React.FC = () => {
             const lateDays = empAtts.filter((a) => a.status === 'LATE').length;
             const restDays = empAtts.filter((a) => a.status === 'REST_DAY').length;
             const leaveDays = empAtts.filter((a) => a.status === 'LEAVE').length;
-            const absentDays = empAtts.filter((a) => a.status === 'ABSENT').length;
             const totalWorkedHours = empAtts.reduce((sum, a) => sum + (a.workingHours || 0), 0);
             const totalOvertime = empAtts.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
 
@@ -492,7 +587,7 @@ export const EmployeesView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: EMPLOYEES DIRECTORY */}
+      {/* TAB 3: EMPLOYEES DIRECTORY & ACCOUNTS MANAGEMENT */}
       {activeTab === 'EMPLOYEES' && (
         <div className="space-y-4">
           <div className="bg-white p-3.5 rounded-2xl border border-purple-100 shadow-xs flex items-center gap-3">
@@ -507,145 +602,315 @@ export const EmployeesView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredEmployees.map((emp) => {
-              const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
-              const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
+            {filteredEmployees.length === 0 ? (
+              <div className="col-span-full bg-white p-8 rounded-3xl border border-purple-100 text-center text-slate-400 font-black text-xs">
+                لا يوجد موظفون في هذه القائمة
+              </div>
+            ) : (
+              filteredEmployees.map((emp) => {
+                const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
+                const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
+                const linkedUser = emp.userId ? systemUsers.find((u) => u.id === emp.userId) : null;
 
-              return (
-                <div
-                  key={emp.id}
-                  className="bg-white p-5 rounded-2xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-black text-purple-950 text-sm">{emp.fullNameAr}</h3>
-                        <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
-                      </div>
-                      <span className="bg-emerald-100 text-emerald-800 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
-                        نشط 🟢
-                      </span>
-                    </div>
-
-                    <div className="text-xs space-y-1.5 text-slate-600 font-bold bg-[#FFFBF7] p-3 rounded-xl border border-amber-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 font-bold">الهاتف:</span>
-                        <span className="font-mono text-purple-950">{emp.phone}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 font-bold">أوقات العمل اليومية:</span>
-                        <span className="font-mono font-black text-amber-900">{shiftStr}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 font-bold">العطل الأسبوعية المعتمدة:</span>
-                        <span className="font-black text-rose-700">{offDaysStr}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between text-xs font-bold pt-1">
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">الراتب الأساسي</span>
-                        <span className="text-purple-950 font-black">{emp.baseSalary.toLocaleString()} د.ج</span>
-                      </div>
-                      {emp.commissionRatePercent ? (
-                        <div className="text-left">
-                          <span className="text-slate-400 block text-[10px]">نسبة العمولة</span>
-                          <span className="text-amber-600 font-black">{emp.commissionRatePercent}%</span>
+                return (
+                  <div
+                    key={emp.id}
+                    className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-black text-purple-950 text-base">{emp.fullNameAr}</h3>
+                          <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
                         </div>
-                      ) : null}
+                        <span className="bg-emerald-100 text-emerald-800 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
+                          نشط 🟢
+                        </span>
+                      </div>
+
+                      {/* System User Account Info Badge */}
+                      <div className="p-2.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs font-black">
+                        {linkedUser ? (
+                          <div className="flex items-center justify-between text-purple-950">
+                            <span className="flex items-center gap-1.5 text-[11px]">
+                              <Key className="w-3.5 h-3.5 text-amber-600" />
+                              <span>حساب الدخول:</span>
+                              <span className="font-mono text-purple-900 bg-white px-2 py-0.5 rounded-md border border-amber-200 font-black">
+                                {linkedUser.username}
+                              </span>
+                            </span>
+                            <span className="text-[10px] text-amber-900 bg-amber-200 px-1.5 py-0.2 rounded-md font-bold">
+                              {linkedUser.roleCode === 'CASHIER'
+                                ? 'كاشير'
+                                : linkedUser.roleCode === 'STOREKEEPER'
+                                ? 'مخزن'
+                                : linkedUser.roleCode === 'ACCOUNTANT'
+                                ? 'محاسب'
+                                : linkedUser.roleCode === 'MANAGER'
+                                ? 'مسؤول'
+                                : 'مستخدم'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                            <span className="flex items-center gap-1">
+                              <Key className="w-3.5 h-3.5 text-slate-400" />
+                              <span>لا يملك حساب دخول للنظام</span>
+                            </span>
+                            <button
+                              onClick={() => openEditEmployeeModal(emp)}
+                              className="text-[10px] text-amber-700 bg-white px-2 py-0.5 rounded-md border border-amber-300 font-black hover:bg-amber-100 cursor-pointer"
+                            >
+                              + إضافة حساب
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-xs space-y-1.5 text-slate-600 font-bold bg-[#FFFBF7] p-3 rounded-2xl border border-amber-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-bold">الهاتف:</span>
+                          <span className="font-mono text-purple-950">{emp.phone || 'غير مسجل'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-bold">أوقات العمل اليومية:</span>
+                          <span className="font-mono font-black text-amber-900">{shiftStr}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-bold">العطل الأسبوعية المعتمدة:</span>
+                          <span className="font-black text-rose-700">{offDaysStr}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between text-xs font-bold pt-1">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">الراتب الأساسي</span>
+                          <span className="text-purple-950 font-black">{emp.baseSalary.toLocaleString()} د.ج</span>
+                        </div>
+                        {emp.commissionRatePercent ? (
+                          <div className="text-left">
+                            <span className="text-slate-400 block text-[10px]">نسبة العمولة</span>
+                            <span className="text-amber-600 font-black">{emp.commissionRatePercent}%</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Actions Grid (Edit, Schedule, Delete) */}
+                    <div className="pt-3 border-t border-purple-100 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => openEditEmployeeModal(emp)}
+                          className="py-2 bg-slate-100 hover:bg-slate-200 text-purple-950 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          title="تعديل بيانات الموظف ورسالة الدخول والكلمة السرية"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>تعديل الموظف ✏️</span>
+                        </button>
+
+                        <button
+                          onClick={() => setSelectedEmpForSchedule(emp)}
+                          className="py-2 bg-purple-50 hover:bg-purple-100 text-purple-950 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-purple-100"
+                          title="تخصيص أوقات الدوام والعطل المخصصة"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-amber-600" />
+                          <span>تخصيص الدوام ⚙️</span>
+                        </button>
+                      </div>
+
+                      {/* Delete Employee Button */}
+                      <button
+                        onClick={() => handleDeleteEmployee(emp)}
+                        className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-rose-200"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>حذف الموظف وحسابه نهائياً 🗑️</span>
+                      </button>
                     </div>
                   </div>
-
-                  {/* Schedule Customization Button */}
-                  <div className="pt-3 border-t border-purple-100">
-                    <button
-                      onClick={() => setSelectedEmpForSchedule(emp)}
-                      className="w-full py-2 bg-gradient-to-r from-purple-900 to-indigo-900 hover:brightness-110 text-amber-300 font-black text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Settings className="w-3.5 h-3.5 text-amber-400" />
-                      <span>تخصيص أوقات العمل والعطل ⚙️</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}
 
-      {/* New Employee Modal */}
-      {isNewEmpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-purple-100 space-y-4 shadow-2xl">
-            <h3 className="font-black text-lg text-purple-950">إضافة موظف جديد ✨</h3>
-            <form onSubmit={handleCreateEmployee} className="space-y-3 text-xs font-black text-purple-950">
-              <div>
-                <label className="block mb-1">الاسم الكامل *</label>
-                <input
-                  type="text"
-                  required
-                  value={fullNameAr}
-                  onChange={(e) => setFullNameAr(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#FFFBF7] border border-amber-200 rounded-xl outline-none font-bold focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-              <div>
-                <label className="block mb-1">رقم الهاتف *</label>
-                <input
-                  type="text"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#FFFBF7] border border-amber-200 rounded-xl outline-none font-mono font-bold"
-                />
-              </div>
-              <div>
-                <label className="block mb-1">المسمى الوظيفي *</label>
-                <input
-                  type="text"
-                  required
-                  value={positionAr}
-                  onChange={(e) => setPositionAr(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#FFFBF7] border border-amber-200 rounded-xl outline-none font-bold"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+      {/* Create / Edit Employee & Account Credentials Modal */}
+      {isEmpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 border border-purple-100 space-y-4 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+              <h3 className="font-black text-lg text-purple-950 flex items-center gap-2">
+                {editingEmp ? <Edit className="w-5 h-5 text-indigo-600" /> : <UserPlus className="w-5 h-5 text-amber-500" />}
+                <span>{editingEmp ? `تعديل الموظف: ${editingEmp.fullNameAr}` : 'إضافة موظف جديد وتحديد حساب دخوله ✨'}</span>
+              </h3>
+              <button
+                onClick={() => setIsEmpModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmployee} className="space-y-4 text-xs font-black text-purple-950">
+              {/* Employee Main Info */}
+              <div className="space-y-3 p-4 bg-[#FFFBF7] rounded-2xl border border-amber-200">
+                <h4 className="text-xs font-black text-amber-900 border-b border-amber-200 pb-1">
+                  1. البيانات الوظيفية والشخصية:
+                </h4>
                 <div>
-                  <label className="block mb-1">الراتب الأساسي (د.ج) *</label>
+                  <label className="block mb-1">الاسم الكامل للموظف *</label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    min={0}
-                    value={baseSalary}
-                    onChange={(e) => setBaseSalary(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-[#FFFBF7] border border-amber-200 rounded-xl outline-none font-mono font-bold"
+                    value={fullNameAr}
+                    onChange={(e) => setFullNameAr(e.target.value)}
+                    placeholder="مثال: محمد الأمين زروقي"
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-bold focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
-                <div>
-                  <label className="block mb-1">عمولة المبيعات %</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.1}
-                    value={commissionRatePercent}
-                    onChange={(e) => setCommissionRatePercent(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-[#FFFBF7] border border-amber-200 rounded-xl outline-none font-mono font-bold"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block mb-1">رقم الهاتف *</label>
+                    <input
+                      type="text"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0550 12 34 56"
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1">المسمى الوظيفي *</label>
+                    <input
+                      type="text"
+                      required
+                      value={positionAr}
+                      onChange={(e) => setPositionAr(e.target.value)}
+                      placeholder="كاشير، مسؤول مخزن..."
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block mb-1">الراتب الأساسي الشهري (د.ج) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={baseSalary}
+                      onChange={(e) => setBaseSalary(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1">نسبة العمولة % على المبيعات</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={commissionRatePercent}
+                      onChange={(e) => setCommissionRatePercent(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-mono font-bold"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+
+              {/* Login Credentials Section */}
+              <div className="space-y-3 p-4 bg-purple-50/60 rounded-2xl border border-purple-200">
+                <div className="flex items-center justify-between border-b border-purple-200 pb-1">
+                  <h4 className="text-xs font-black text-purple-950 flex items-center gap-1.5">
+                    <Key className="w-4 h-4 text-amber-600" />
+                    <span>2. بيانات حساب تسجيل الدخول بالنظام:</span>
+                  </h4>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-black text-purple-900">
+                    <input
+                      type="checkbox"
+                      checked={createAccount}
+                      onChange={(e) => setCreateAccount(e.target.checked)}
+                      className="w-4 h-4 rounded-md accent-amber-500 cursor-pointer"
+                    />
+                    <span>تفعيل حساب دخول</span>
+                  </label>
+                </div>
+
+                {createAccount && (
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label className="block mb-1 text-slate-700">
+                        اسم المستخدم أو البريد الإلكتروني لدخول النظام *
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          required={createAccount}
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="مثال: mohamed أو mohamed@zerrouki.dz"
+                          className="w-full pr-9 pl-3 py-2 bg-white border border-purple-300 rounded-xl outline-none font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block mb-1 text-slate-700">
+                        كلمة السر الخاصة بالموظف لتسجيل الدخول {editingEmp ? '(اتركها فارغة للإبقاء على الحالية)' : '*'}
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          required={createAccount && !editingEmp}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder={editingEmp ? 'اكتب كلمة سر جديدة لتعديلها...' : 'مثال: 123456'}
+                          className="w-full pr-9 pl-3 py-2 bg-white border border-purple-300 rounded-xl outline-none font-mono font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block mb-1 text-slate-700">
+                        صلاحية ودور الحساب داخل النظام *
+                      </label>
+                      <div className="relative">
+                        <Shield className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <select
+                          value={userRoleCode}
+                          onChange={(e) => setUserRoleCode(e.target.value)}
+                          className="w-full pr-9 pl-3 py-2 bg-white border border-purple-300 rounded-xl outline-none font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-400"
+                        >
+                          <option value="CASHIER">أمين الصندوق / الكاشير (واجهة البيع POS)</option>
+                          <option value="STOREKEEPER">مسؤول المخزن (المنتجات والمشتريات)</option>
+                          <option value="ACCOUNTANT">المحاسب المالي (المصاريف والتقارير والرواتب)</option>
+                          <option value="MANAGER">المسؤول التنفيذي للمحل</option>
+                          <option value="OWNER">مدير عام (صلاحية كاملة)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-purple-100">
                 <button
                   type="button"
-                  onClick={() => setIsNewEmpModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl font-black text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setIsEmpModalOpen(false)}
+                  className="px-4 py-2.5 border border-gray-300 rounded-xl font-black text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black rounded-xl shadow-md hover:brightness-110 cursor-pointer"
+                  className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white font-black rounded-xl shadow-md hover:brightness-110 cursor-pointer flex items-center gap-1.5"
                 >
-                  حفظ الموظف
+                  <Check className="w-4 h-4" />
+                  <span>{editingEmp ? 'حفظ التعديلات ✨' : 'حفظ وإنشاء الموظف ✨'}</span>
                 </button>
               </div>
             </form>
@@ -686,6 +951,55 @@ export const EmployeesView: React.FC = () => {
         employees={employees}
         onRecordSaved={() => loadData()}
       />
+
+      {/* Custom React Delete Confirmation Modal */}
+      {empToDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-rose-200 space-y-4 shadow-2xl text-purple-950">
+            <div className="flex items-center gap-3 border-b border-rose-100 pb-3">
+              <div className="p-3 bg-rose-100 text-rose-700 rounded-2xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-rose-950">تأكيد حذف الموظف نهائياً ⚠️</h3>
+                <p className="text-xs text-slate-500 font-bold">هذا الإجراء لا يمكن التراجع عنه بعد إتمامه</p>
+              </div>
+            </div>
+
+            <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-200 text-xs font-bold space-y-2">
+              <p className="text-slate-800">
+                هل أنت متأكد من رغبتك في حذف الموظف:
+              </p>
+              <div className="bg-white p-3 rounded-xl border border-rose-200 font-black text-rose-900 flex justify-between items-center">
+                <span>{empToDeleteConfirm.fullNameAr}</span>
+                <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md font-extrabold">{empToDeleteConfirm.positionAr}</span>
+              </div>
+              <p className="text-[11px] text-rose-700 font-semibold">
+                سيتم إزالة الموظف وحساب دخوله بالنظام وسجلاته بشكل كامل ونهائي.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEmpToDeleteConfirm(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 font-black text-xs text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                إلغاء ✖
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmExecutionDeleteEmployee}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-700 text-white font-black text-xs shadow-md hover:brightness-110 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4 text-white" />
+                <span>تأكيد الحذف النهائي 🗑️</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

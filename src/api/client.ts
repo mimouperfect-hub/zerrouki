@@ -138,6 +138,8 @@ export const api = {
   // Employees, Attendance, Leaves & Payroll
   getEmployees: () => fetchApi<Employee[]>('/employees'),
   createEmployee: (data: any) => fetchApi<Employee>('/employees', { method: 'POST', body: JSON.stringify(data) }),
+  updateEmployee: (id: string, data: any) => fetchApi<Employee>(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteEmployee: (id: string) => fetchApi<{ message: string }>(`/employees/${id}`, { method: 'DELETE' }),
   updateEmployeeSchedule: (id: string, data: { workStartTime?: string; workEndTime?: string; offDays?: string[]; lateToleranceMinutes?: number; userId?: string }) =>
     fetchApi<Employee>(`/employees/${id}/schedule`, { method: 'PUT', body: JSON.stringify(data) }),
   getAttendance: () => fetchApi<AttendanceRecord[]>('/attendance'),

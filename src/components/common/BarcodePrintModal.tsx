@@ -2,6 +2,91 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Printer, X, Plus, Minus, Check, Tag, Layers, Sparkles, Search, ChevronDown } from 'lucide-react';
 import { Product, ProductVariant } from '../../types';
 
+// Standard Code 128 patterns for SVG barcode rendering (0-105)
+const CODE128_PATTERNS: string[] = [
+  "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
+  "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
+  "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211",
+  "212123", "212321", "222121", "111323", "131123", "131321", "112313", "132113", "132311", "211313",
+  "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331",
+  "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111",
+  "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214",
+  "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111",
+  "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141",
+  "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141",
+  "114131", "311141", "411131", "211412", "211214", "211232"
+];
+
+function encodeCode128(text: string): { width: number; bars: { x: number; width: number }[] } {
+  const safeText = text || '000000';
+  const codes: number[] = [104]; // Start B
+
+  for (let i = 0; i < safeText.length; i++) {
+    const charCode = safeText.charCodeAt(i);
+    let val = charCode - 32;
+    if (val < 0 || val > 95) val = 0;
+    codes.push(val);
+  }
+
+  let sum = codes[0];
+  for (let i = 1; i < codes.length; i++) {
+    sum += codes[i] * i;
+  }
+  const checksum = sum % 103;
+  codes.push(checksum);
+
+  let patternStr = '';
+  for (const c of codes) {
+    patternStr += CODE128_PATTERNS[c] || CODE128_PATTERNS[0];
+  }
+  patternStr += "2331112"; // Stop code
+
+  const bars: { x: number; width: number }[] = [];
+  let currentX = 10;
+
+  for (let i = 0; i < patternStr.length; i++) {
+    const moduleWidth = parseInt(patternStr[i], 10);
+    const isBar = i % 2 === 0;
+
+    if (isBar) {
+      bars.push({ x: currentX, width: moduleWidth });
+    }
+    currentX += moduleWidth;
+  }
+
+  return { width: currentX + 10, bars };
+}
+
+const BarcodeSVG: React.FC<{ value: string; height?: number; className?: string }> = ({
+  value,
+  height = 40,
+  className = "w-full h-full"
+}) => {
+  const { width, bars } = encodeCode128(value);
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="0" y="0" width={width} height={height} fill="#ffffff" />
+      {bars.map((bar, idx) => (
+        <rect
+          key={idx}
+          x={bar.x}
+          y="0"
+          width={bar.width}
+          height={height}
+          fill="#000000"
+          style={{ shapeRendering: 'crispEdges' }}
+        />
+      ))}
+    </svg>
+  );
+};
+
 interface BarcodePrintModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,14 +173,25 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
           }
           #barcode-sticker-print-area, #barcode-sticker-print-area * {
             visibility: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           #barcode-sticker-print-area {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
+            max-height: none !important;
+            overflow: visible !important;
             background: white !important;
             padding: 10px !important;
+            display: grid !important;
+          }
+          .barcode-sticker-item {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .no-print {
             display: none !important;
@@ -324,7 +420,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             {Array.from({ length: labelCount }).map((_, index) => (
               <div
                 key={index}
-                className="bg-white border border-slate-300 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-xs space-y-1 w-full min-h-[90px]"
+                className="barcode-sticker-item bg-white border border-slate-300 rounded-xl p-2.5 flex flex-col items-center justify-center text-center shadow-xs space-y-1 w-full min-h-[90px]"
               >
                 {showStoreName && (
                   <span className="text-[9px] font-black text-purple-950 block truncate max-w-full">
@@ -335,33 +431,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   {activeName}
                 </span>
 
-                {/* High Contrast Standard 1D Barcode Pattern for Hardware Scanners */}
+                {/* High Contrast SVG Code 128 Barcode for Hardware Scanners & Crisp Printing */}
                 <div className="w-full flex flex-col items-center justify-center py-1">
-                  <div className="h-8 w-11/12 flex items-center justify-center gap-[1.5px] bg-white px-2 py-0.5 border border-slate-200 rounded-xs shadow-2xs">
-                    {/* Quiet Start Guard */}
-                    <div className="h-full w-[3px] bg-black" />
-                    <div className="h-full w-[1.5px] bg-white" />
-                    <div className="h-full w-[1.5px] bg-black" />
-
-                    {/* Encoded Digit Bars */}
-                    {activeBarcode.split('').map((char, i) => {
-                      const code = char.charCodeAt(0);
-                      const w1 = (code % 3) + 1;
-                      const w2 = ((code * 2) % 3) + 1;
-                      return (
-                        <React.Fragment key={i}>
-                          <div className="h-full bg-black" style={{ width: `${w1 * 1.5}px` }} />
-                          <div className="h-full bg-white" style={{ width: `1.5px` }} />
-                          <div className="h-full bg-black" style={{ width: `${w2 * 1.5}px` }} />
-                          <div className="h-full bg-white" style={{ width: `1.5px` }} />
-                        </React.Fragment>
-                      );
-                    })}
-
-                    {/* Quiet Stop Guard */}
-                    <div className="h-full w-[1.5px] bg-black" />
-                    <div className="h-full w-[1.5px] bg-white" />
-                    <div className="h-full w-[3px] bg-black" />
+                  <div className="h-9 w-11/12 flex items-center justify-center bg-white px-1.5 py-1 border border-slate-300 rounded-xs shadow-2xs overflow-hidden">
+                    <BarcodeSVG value={activeBarcode} height={36} className="w-full h-full" />
                   </div>
                   <span className="text-[10px] font-mono font-black text-slate-900 tracking-widest mt-0.5">
                     {activeBarcode}
@@ -400,3 +473,4 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     </div>
   );
 };
+

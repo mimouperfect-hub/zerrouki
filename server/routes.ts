@@ -1640,15 +1640,63 @@ apiRouter.post('/employees', (req: Request, res: Response) => {
   const currentUser = (req as any).user;
   const {
     fullNameAr, phone, positionAr, contractType, salaryType, baseSalary,
-    dailyRate, hourlyRate, commissionRatePercent, workingHoursPerDay, workingDaysPerMonth, restDayAr
+    dailyRate, hourlyRate, commissionRatePercent, workingHoursPerDay, workingDaysPerMonth, restDayAr,
+    workStartTime, workEndTime, offDays, lateToleranceMinutes, userId,
+    createAccount, username, email, password, userRoleCode
   } = req.body;
 
+  if (!fullNameAr || !fullNameAr.trim()) {
+    return res.status(400).json({ error: 'يرجى كتابة الاسم الكامل للموظف' });
+  }
+
   const employees = db.get('employees');
+  const users = db.get('users');
+
+  let linkedUserId: string | undefined = userId;
+  const loginName = (username || email || '').trim();
+  const pwd = (password || '').trim();
+
+  if ((createAccount || loginName) && pwd) {
+    if (!loginName) {
+      return res.status(400).json({ error: 'يرجى كتابة اسم المستخدم أو البريد الإلكتروني لدخول الموظف' });
+    }
+
+    const existingUser = users.find(u =>
+      (u.username && u.username.toLowerCase() === loginName.toLowerCase()) ||
+      (u.email && u.email.toLowerCase() === loginName.toLowerCase())
+    );
+
+    if (existingUser) {
+      existingUser.password = pwd;
+      existingUser.name = fullNameAr.trim();
+      existingUser.phone = phone ? phone.trim() : existingUser.phone;
+      existingUser.roleCode = userRoleCode || 'CASHIER';
+      existingUser.isActive = true;
+      linkedUserId = existingUser.id;
+    } else {
+      const newUser: User = {
+        id: 'u-' + crypto.randomUUID().substring(0, 8),
+        username: loginName,
+        email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
+        password: pwd,
+        name: fullNameAr.trim(),
+        phone: phone ? phone.trim() : '',
+        roleCode: userRoleCode || 'CASHIER',
+        branchId: 'br-1',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      users.push(newUser);
+      linkedUserId = newUser.id;
+      db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف الجديد: ${fullNameAr} (${loginName})`, newUser.id);
+    }
+  }
+
   const newEmp: Employee = {
     id: 'emp-' + Date.now(),
-    fullNameAr,
-    phone,
-    positionAr,
+    fullNameAr: fullNameAr.trim(),
+    phone: phone ? phone.trim() : '',
+    positionAr: positionAr ? positionAr.trim() : 'كاشير',
     branchId: 'br-1',
     startDate: new Date().toISOString().substring(0, 10),
     contractType: contractType || 'FULL_TIME',
@@ -1660,14 +1708,144 @@ apiRouter.post('/employees', (req: Request, res: Response) => {
     workingHoursPerDay: Number(workingHoursPerDay) || 8,
     workingDaysPerMonth: Number(workingDaysPerMonth) || 26,
     restDayAr: restDayAr || 'الجمعة',
+    workStartTime: workStartTime || '08:00',
+    workEndTime: workEndTime || '17:00',
+    offDays: Array.isArray(offDays) && offDays.length > 0 ? offDays : ['الجمعة'],
+    lateToleranceMinutes: Number(lateToleranceMinutes) || 15,
+    userId: linkedUserId,
     isActive: true,
     createdAt: new Date().toISOString()
   };
 
   employees.push(newEmp);
   db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'CREATE_EMPLOYEE', 'EMPLOYEE', `إضافة موظف جديد: ${fullNameAr}`, newEmp.id);
+  db.logAudit(currentUser.id, currentUser.name, 'CREATE_EMPLOYEE', 'EMPLOYEE', `إضافة موظف جديد: ${newEmp.fullNameAr}`, newEmp.id);
   res.json(newEmp);
+});
+
+apiRouter.put('/employees/:id', (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  const { id } = req.params;
+  const {
+    fullNameAr, phone, positionAr, contractType, salaryType, baseSalary,
+    dailyRate, hourlyRate, commissionRatePercent, restDayAr, workStartTime,
+    workEndTime, offDays, lateToleranceMinutes, isActive,
+    createAccount, username, email, password, userRoleCode
+  } = req.body;
+
+  const employees = db.get('employees');
+  const empIndex = employees.findIndex(e => e.id === id);
+  if (empIndex === -1) return res.status(404).json({ error: 'الموظف غير موجود' });
+
+  const emp = employees[empIndex];
+  const users = db.get('users');
+
+  let linkedUserId = emp.userId;
+  const loginName = (username || email || '').trim();
+  const pwd = (password || '').trim();
+
+  if (loginName || pwd || createAccount) {
+    if (linkedUserId) {
+      const user = users.find(u => u.id === linkedUserId);
+      if (user) {
+        if (loginName) user.username = loginName;
+        if (loginName && loginName.includes('@')) user.email = loginName;
+        if (pwd) user.password = pwd;
+        if (userRoleCode) user.roleCode = userRoleCode;
+        if (fullNameAr) user.name = fullNameAr.trim();
+        if (phone) user.phone = phone.trim();
+        db.logAudit(currentUser.id, currentUser.name, 'UPDATE_USER', 'USER', `تحديث بيانات حساب الدخول للموظف: ${emp.fullNameAr}`, user.id);
+      }
+    } else if (loginName && pwd) {
+      const newUser: User = {
+        id: 'u-' + crypto.randomUUID().substring(0, 8),
+        username: loginName,
+        email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
+        password: pwd,
+        name: fullNameAr || emp.fullNameAr,
+        phone: phone || emp.phone,
+        roleCode: userRoleCode || 'CASHIER',
+        branchId: 'br-1',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      users.push(newUser);
+      linkedUserId = newUser.id;
+      db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف: ${emp.fullNameAr} (${loginName})`, newUser.id);
+    }
+  }
+
+  employees[empIndex] = {
+    ...emp,
+    fullNameAr: fullNameAr ? fullNameAr.trim() : emp.fullNameAr,
+    phone: phone !== undefined ? phone.trim() : emp.phone,
+    positionAr: positionAr ? positionAr.trim() : emp.positionAr,
+    contractType: contractType || emp.contractType,
+    salaryType: salaryType || emp.salaryType,
+    baseSalary: baseSalary !== undefined ? Number(baseSalary) : emp.baseSalary,
+    dailyRate: dailyRate !== undefined ? Number(dailyRate) : emp.dailyRate,
+    hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : emp.hourlyRate,
+    commissionRatePercent: commissionRatePercent !== undefined ? Number(commissionRatePercent) : emp.commissionRatePercent,
+    restDayAr: restDayAr || emp.restDayAr,
+    workStartTime: workStartTime || emp.workStartTime,
+    workEndTime: workEndTime || emp.workEndTime,
+    offDays: offDays || emp.offDays,
+    lateToleranceMinutes: lateToleranceMinutes !== undefined ? Number(lateToleranceMinutes) : emp.lateToleranceMinutes,
+    userId: linkedUserId,
+    isActive: isActive !== undefined ? isActive : emp.isActive
+  };
+
+  db.save();
+  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_EMPLOYEE', 'EMPLOYEE', `تحديث بيانات الموظف: ${employees[empIndex].fullNameAr}`, id);
+  res.json(employees[empIndex]);
+});
+
+apiRouter.delete('/employees/:id', (req: Request, res: Response) => {
+  const currentUser = (req as any).user || { id: 'u-owner', name: 'المدير العام' };
+  const { id } = req.params;
+
+  console.log(`\n========================================`);
+  console.log(`🗑️ [SERVER DELETE EMPLOYEE ROUTE TRIGGERED]`);
+  console.log(`- Requested ID: "${id}"`);
+  console.log(`- Request User: "${currentUser.name}" (${currentUser.id})`);
+
+  const employees = db.get('employees');
+  console.log(`- Total current employees in database: ${employees.length}`);
+
+  const empIndex = employees.findIndex(e => e.id === id || String(e.id).trim() === String(id).trim());
+  if (empIndex === -1) {
+    console.warn(`⚠️ Mismatch: Employee with ID "${id}" was not found in DB list!`);
+    console.log(`========================================\n`);
+    return res.json({ success: true, message: 'الموظف محذوف مسبقاً' });
+  }
+
+  const emp = employees[empIndex];
+  console.log(`- Found employee to delete: "${emp.fullNameAr}" (id: ${emp.id}, userId: ${emp.userId})`);
+
+  // If employee has a linked user account, delete user account
+  const users = db.get('users');
+  if (emp.userId) {
+    const uIdx = users.findIndex(u => u.id === emp.userId);
+    if (uIdx !== -1) {
+      console.log(`- Removing linked user account: "${users[uIdx].username}" (id: ${users[uIdx].id})`);
+      users.splice(uIdx, 1);
+    }
+  } else if (emp.fullNameAr) {
+    // Check if there is a user account with the same name
+    const uIdx = users.findIndex(u => u.name && u.name.trim() === emp.fullNameAr.trim());
+    if (uIdx !== -1 && users[uIdx].id !== 'u-owner') {
+      console.log(`- Removing user account matched by name: "${users[uIdx].username}"`);
+      users.splice(uIdx, 1);
+    }
+  }
+
+  employees.splice(empIndex, 1);
+  db.save();
+  console.log(`- Employee deleted successfully. Remaining count: ${employees.length}`);
+  console.log(`========================================\n`);
+
+  db.logAudit(currentUser.id || 'u-owner', currentUser.name || 'المدير العام', 'DELETE_EMPLOYEE', 'EMPLOYEE', `حذف الموظف وحسابه: ${emp.fullNameAr}`, id);
+  res.json({ success: true, message: `تم حذف الموظف (${emp.fullNameAr}) وحسابه بنجاح` });
 });
 
 apiRouter.put('/employees/:id/schedule', (req: Request, res: Response) => {

@@ -291,7 +291,7 @@
       "pinCode": "1234",
       "avatarUrl": "",
       "createdAt": "2026-08-09T20:34:58.094Z",
-      "lastLoginAt": "2026-08-11T21:34:34.580Z"
+      "lastLoginAt": "2026-08-16T19:38:53.367Z"
     },
     {
       "id": "u-cashier",
@@ -331,9 +331,39 @@
       "isActive": true,
       "createdAt": "2026-08-09T20:34:58.095Z",
       "lastLoginAt": "2026-08-10T18:15:39.379Z"
+    },
+    {
+      "id": "u-4b9c5464",
+      "username": "adam",
+      "email": "adam@zerrouki.dz",
+      "password": "0123456789",
+      "name": "ادم كمال",
+      "phone": "0770821021",
+      "roleCode": "CASHIER",
+      "branchId": "br-1",
+      "isActive": true,
+      "createdAt": "2026-08-16T20:50:00.818Z",
+      "lastLoginAt": "2026-08-16T20:50:53.715Z"
     }
   ],
-  "categories": [],
+  "categories": [
+    {
+      "id": "cat-1",
+      "nameAr": "kqkqk",
+      "nameFr": "kqkqk",
+      "icon": "Candy",
+      "sortOrder": 1,
+      "isActive": true
+    },
+    {
+      "id": "cat-2",
+      "nameAr": "jhgjgh",
+      "nameFr": "jhgjgh",
+      "icon": "Candy",
+      "sortOrder": 2,
+      "isActive": false
+    }
+  ],
   "brands": [],
   "units": [
     {
@@ -357,9 +387,56 @@
       "code": "KG"
     }
   ],
-  "products": [],
-  "productBatches": [],
-  "stockMovements": [],
+  "products": [
+    {
+      "id": "p-1786909234725",
+      "nameAr": "تاست",
+      "nameFr": "تاست",
+      "barcode": "ZRQ-000101",
+      "internalCode": "ZRQ-00101",
+      "sku": "ZRQ-00101",
+      "categoryId": "cat-1",
+      "unitId": "u1",
+      "purchasePrice": 1000,
+      "sellingPrice": 1200,
+      "wholesalePrice": 1200,
+      "minSellingPrice": 1000,
+      "currentStock": 100,
+      "minStock": 10,
+      "maxStock": 100,
+      "imageUrl": "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=400&q=80",
+      "isActive": true,
+      "hasBatchTracking": true,
+      "variants": [],
+      "createdAt": "2026-08-16T19:40:34.726Z",
+      "updatedAt": "2026-08-16T19:40:34.726Z"
+    }
+  ],
+  "productBatches": [
+    {
+      "id": "bat-1786909234726",
+      "productId": "p-1786909234725",
+      "batchNumber": "LOT-INIT-ZRQ-00101",
+      "expirationDate": "2030-05-15",
+      "quantity": 100,
+      "purchasePrice": 1000,
+      "createdAt": "2026-08-16T19:40:34.726Z"
+    }
+  ],
+  "stockMovements": [
+    {
+      "id": "sm-1786909234726",
+      "productId": "p-1786909234725",
+      "batchId": "bat-1786909234726",
+      "branchId": "br-1",
+      "type": "PURCHASE",
+      "quantityDelta": 100,
+      "stockAfter": 100,
+      "notes": "مخزون أولي للمنتج الجديد",
+      "createdByUserId": "u-owner",
+      "createdAt": "2026-08-16T19:40:34.726Z"
+    }
+  ],
   "wastes": [],
   "stockAdjustments": [],
   "suppliers": [],
@@ -408,7 +485,28 @@
     }
   ],
   "expenses": [],
-  "employees": [],
+  "employees": [
+    {
+      "id": "emp-1786911268574",
+      "fullNameAr": "ادم كمال",
+      "phone": "0770821021",
+      "positionAr": "كاشير",
+      "branchId": "br-1",
+      "startDate": "2026-08-16",
+      "contractType": "FULL_TIME",
+      "salaryType": "MONTHLY",
+      "baseSalary": 40000,
+      "dailyRate": 0,
+      "hourlyRate": 0,
+      "commissionRatePercent": 0,
+      "workingHoursPerDay": 8,
+      "workingDaysPerMonth": 26,
+      "restDayAr": "الجمعة",
+      "isActive": true,
+      "createdAt": "2026-08-16T20:14:28.574Z",
+      "userId": "u-4b9c5464"
+    }
+  ],
   "attendanceRecords": [],
   "leaveRequests": [],
   "salaryAdvances": [],
@@ -418,6 +516,99 @@
   "payrollRecords": [],
   "promotions": [],
   "auditLogs": [
+    {
+      "id": "al-91179187",
+      "userId": "u-4b9c5464",
+      "userName": "ادم كمال",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-4b9c5464",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-16T20:50:53.725Z"
+    },
+    {
+      "id": "al-f99a3f02",
+      "userId": "u-owner",
+      "action": "UPDATE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1786911268574",
+      "detailsAr": "تحديث بيانات الموظف: ادم كمال",
+      "createdAt": "2026-08-16T20:50:00.826Z"
+    },
+    {
+      "id": "al-d8242037",
+      "userId": "u-owner",
+      "action": "CREATE_USER",
+      "entity": "USER",
+      "entityId": "u-4b9c5464",
+      "detailsAr": "إنشاء حساب دخول للموظف: ادم كمال (adam)",
+      "createdAt": "2026-08-16T20:50:00.818Z"
+    },
+    {
+      "id": "al-9a1a63f8",
+      "userId": "u-owner",
+      "userName": "المدير العام",
+      "action": "DELETE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1786910875056",
+      "detailsAr": "حذف الموظف وحسابه: اذم كمال",
+      "createdAt": "2026-08-16T20:48:48.552Z"
+    },
+    {
+      "id": "al-3649553e",
+      "userId": "u-owner",
+      "action": "CREATE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1786911268574",
+      "detailsAr": "إضافة موظف جديد: ادم كمال",
+      "createdAt": "2026-08-16T20:14:28.580Z"
+    },
+    {
+      "id": "al-523ce79b",
+      "userId": "u-owner",
+      "action": "CREATE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1786910875056",
+      "detailsAr": "إضافة موظف جديد: اذم كمال",
+      "createdAt": "2026-08-16T20:07:55.068Z"
+    },
+    {
+      "id": "al-6ebaa25a",
+      "userId": "u-owner",
+      "action": "CREATE_PRODUCT",
+      "entity": "PRODUCT",
+      "entityId": "p-1786909234725",
+      "detailsAr": "إضافة منتج جديد: تاست",
+      "createdAt": "2026-08-16T19:40:34.743Z"
+    },
+    {
+      "id": "al-5599a9ca",
+      "userId": "u-owner",
+      "action": "DELETE_CATEGORY",
+      "entity": "CATEGORY",
+      "entityId": "cat-2",
+      "detailsAr": "حذف تصنيف: jhgjgh",
+      "createdAt": "2026-08-16T19:39:35.138Z"
+    },
+    {
+      "id": "al-1322b5b9",
+      "userId": "u-owner",
+      "action": "CREATE_CATEGORY",
+      "entity": "CATEGORY",
+      "entityId": "cat-2",
+      "detailsAr": "إضافة تصنيف جديد: jhgjgh",
+      "createdAt": "2026-08-16T19:39:16.316Z"
+    },
+    {
+      "id": "al-a7ee2403",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-16T19:38:53.379Z"
+    },
     {
       "id": "al-7fd3ceac",
       "userId": "u-owner",
