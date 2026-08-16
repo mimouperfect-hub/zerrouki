@@ -15,29 +15,37 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 
   let response: Response;
+  const targetUrl = `/api${endpoint}`;
+  console.log(`📡 [FETCH_API REQUEST] ${options.method || 'GET'} -> ${targetUrl}`);
+
   try {
-    response = await fetch(`/api${endpoint}`, {
+    response = await fetch(targetUrl, {
       ...options,
       headers
     });
+    console.log(`📩 [FETCH_API RESPONSE STATUS] ${response.status} ${response.statusText} for ${targetUrl}`);
   } catch (netErr: any) {
+    console.error(`💥 [FETCH_API NETWORK ERROR] for ${targetUrl}:`, netErr);
     throw new Error('خطأ في الاتصال بالخادم. يرجى التأكد من تشغيل السيرفر واستقرار شبكة الاتصال.');
   }
 
   const contentType = response.headers.get('content-type') || '';
   const text = await response.text();
+  console.log(`📄 [FETCH_API RAW RESPONSE] for ${targetUrl}:`, text.substring(0, 500));
 
   let data: any;
   try {
     data = text ? JSON.parse(text) : {};
   } catch (e) {
+    console.error(`💥 [FETCH_API JSON PARSE ERROR] for ${targetUrl}. Raw text:`, text);
     if (!response.ok) {
-      throw new Error(`خطأ بالاتصال بالسيرفر (${response.status})`);
+      throw new Error(`خطأ بالاتصال بالسيرفر (${response.status}): ${text.substring(0, 100)}`);
     }
     throw new Error('استجابة السيرفر غير صالحة');
   }
 
   if (!response.ok) {
+    console.error(`💥 [FETCH_API HTTP ERROR ${response.status}] for ${targetUrl}:`, data);
     throw new Error(data.error || `Error ${response.status}`);
   }
 

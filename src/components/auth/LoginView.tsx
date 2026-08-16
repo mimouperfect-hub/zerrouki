@@ -19,20 +19,29 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     if (!emailOrUsername || !password) return;
 
+    console.group('🔐 [تسجيل الدخول - DEBUG LOG]');
+    console.log('1. إرسال بيانات الدخول:', { username: emailOrUsername, passwordLength: password.length });
     setLoading(true);
     setErrorMessage(null);
 
     try {
+      console.log('2. جاري استدعاء api.login...');
       const res = await api.login({
         username: emailOrUsername,
         password
       });
+      console.log('3. ✅ استجابة تسجيل الدخول بنجاح:', res);
       localStorage.setItem('zerrouki_token', res.token);
       localStorage.setItem('zerrouki_user', JSON.stringify(res.user));
       onLoginSuccess(res.user, res.token);
     } catch (err: any) {
+      console.error('💥 [فشل تسجيل الدخول - DETAILS]:', {
+        message: err.message,
+        errorObject: err
+      });
       setErrorMessage(err.message || 'فشل تسجيل الدخول، يرجى التأكد من البريد وكلمة السر');
     } finally {
+      console.groupEnd();
       setLoading(false);
     }
   };
