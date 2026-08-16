@@ -30,9 +30,23 @@ function authenticateToken(req: Request, res: Response, next: Function) {
     jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
       if (err || !decoded) {
         (req as any).user = defaultOwner;
-      } else {
-        (req as any).user = decoded;
+        return next();
       }
+
+      // Verify that user account still exists and is active in database
+      const activeUser = users.find(u => u.id === decoded.id && u.isActive !== false);
+      const employees = db.get('employees') || [];
+      const emp = employees.find(e => e.userId === decoded.id || e.id === decoded.id);
+
+      // If user account or employee profile was deleted or deactivated by General Manager
+      if (!activeUser || (emp && emp.isActive === false)) {
+        return res.status(401).json({
+          error: 'تم حذف هذا الموظف أو إلغاء حسابه من النظام من طرف المدير العام. تم تسجيل الخروج التلقائي.',
+          accountStatus: 'DELETED_OR_DISABLED'
+        });
+      }
+
+      (req as any).user = decoded;
       next();
     });
   } catch (err) {
@@ -2746,6 +2760,10 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
 
 apiRouter.post('/attendance/manual', (req: Request, res: Response) => {
   const currentUser = (req as any).user;
+  if (currentUser.roleCode !== 'OWNER' && currentUser.roleCode !== 'MANAGER') {
+    return res.status(403).json({ error: 'عذراً، التسجيل اليدوي للحضور محصور حصرياً بالمدير العام' });
+  }
+
   const { employeeId, date, checkIn, checkOut, status, notes } = req.body;
 
   const employees = db.get('employees');

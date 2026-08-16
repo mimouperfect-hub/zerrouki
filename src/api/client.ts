@@ -46,6 +46,12 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
   if (!response.ok) {
     console.error(`💥 [FETCH_API HTTP ERROR ${response.status}] for ${targetUrl}:`, data);
+    if (response.status === 401) {
+      console.warn('🔒 [SESSION EXPIRED / USER DELETED] Auto logging out deleted employee.');
+      localStorage.removeItem('zerrouki_token');
+      localStorage.removeItem('zerrouki_user');
+      window.location.href = '/';
+    }
     throw new Error(data.error || `Error ${response.status}`);
   }
 
