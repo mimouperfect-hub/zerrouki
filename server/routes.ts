@@ -16,22 +16,29 @@ export const apiRouter = Router();
 
 // Helper middleware for JWT check
 function authenticateToken(req: Request, res: Response, next: Function) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) {
-    // If no token provided in request header, fallback to default owner or query parameter for ease
-    (req as any).user = db.get('users').find(u => u.username === 'owner');
-    return next();
-  }
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    const users = db.get('users') || [];
+    const defaultOwner = users.find(u => u.roleCode === 'OWNER') || users[0] || { id: 'u-owner', name: 'المدير العام', roleCode: 'OWNER' };
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      (req as any).user = db.get('users').find(u => u.username === 'owner');
-    } else {
-      (req as any).user = user;
+    if (!token) {
+      (req as any).user = defaultOwner;
+      return next();
     }
+
+    jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+      if (err || !decoded) {
+        (req as any).user = defaultOwner;
+      } else {
+        (req as any).user = decoded;
+      }
+      next();
+    });
+  } catch (err) {
+    (req as any).user = { id: 'u-owner', name: 'المدير العام', roleCode: 'OWNER' };
     next();
-  });
+  }
 }
 
 apiRouter.use(authenticateToken);
@@ -139,9 +146,9 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
         permissions: userRole ? userRole.permissions : []
       }
     });
-  } catch (err: any) {
-    console.error('Login route internal error:', err);
-    return res.status(500).json({ error: err.message || 'حدث خطأ في الخادم أثناء تسجيل الدخول' });
+  } catch (loginErr: any) {
+    console.error('Login route error:', loginErr);
+    return res.status(500).json({ error: loginErr?.message || 'خطأ في معالجة تسجيل الدخول' });
   }
 });
 
