@@ -9,13 +9,13 @@ import {
   Employee, AttendanceRecord, LeaveRequest, SalaryAdvance, SalaryBonus,
   SalaryDeduction, PayrollPeriod, PayrollRecord, AuditLog, SystemNotification,
   SystemSettings, Promotion
-} from '../src/types';
+} from '../src/types.js';
 import {
   isFirebaseConnected,
   saveToFirestoreDoc,
   saveEntireCollectionToFirestore,
   fetchCollectionFromFirestore
-} from './firebase';
+} from './firebase.js';
 
 const isVercel = !!process.env.VERCEL;
 const DATA_DIR = isVercel ? '/tmp/data' : path.join(process.cwd(), 'data');
