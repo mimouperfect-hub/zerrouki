@@ -291,7 +291,7 @@
       "pinCode": "1234",
       "avatarUrl": "",
       "createdAt": "2026-08-09T20:34:58.094Z",
-      "lastLoginAt": "2026-08-16T19:38:53.367Z"
+      "lastLoginAt": "2026-08-17T21:52:01.129Z"
     },
     {
       "id": "u-cashier",
@@ -331,19 +331,6 @@
       "isActive": true,
       "createdAt": "2026-08-09T20:34:58.095Z",
       "lastLoginAt": "2026-08-10T18:15:39.379Z"
-    },
-    {
-      "id": "u-4b9c5464",
-      "username": "adam",
-      "email": "adam@zerrouki.dz",
-      "password": "0123456789",
-      "name": "ادم كمال",
-      "phone": "0770821021",
-      "roleCode": "CASHIER",
-      "branchId": "br-1",
-      "isActive": true,
-      "createdAt": "2026-08-16T20:50:00.818Z",
-      "lastLoginAt": "2026-08-16T20:50:53.715Z"
     }
   ],
   "categories": [
@@ -353,7 +340,7 @@
       "nameFr": "kqkqk",
       "icon": "Candy",
       "sortOrder": 1,
-      "isActive": true
+      "isActive": false
     },
     {
       "id": "cat-2",
@@ -405,7 +392,7 @@
       "minStock": 10,
       "maxStock": 100,
       "imageUrl": "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=400&q=80",
-      "isActive": true,
+      "isActive": false,
       "hasBatchTracking": true,
       "variants": [],
       "createdAt": "2026-08-16T19:40:34.726Z",
@@ -485,28 +472,7 @@
     }
   ],
   "expenses": [],
-  "employees": [
-    {
-      "id": "emp-1786911268574",
-      "fullNameAr": "ادم كمال",
-      "phone": "0770821021",
-      "positionAr": "كاشير",
-      "branchId": "br-1",
-      "startDate": "2026-08-16",
-      "contractType": "FULL_TIME",
-      "salaryType": "MONTHLY",
-      "baseSalary": 40000,
-      "dailyRate": 0,
-      "hourlyRate": 0,
-      "commissionRatePercent": 0,
-      "workingHoursPerDay": 8,
-      "workingDaysPerMonth": 26,
-      "restDayAr": "الجمعة",
-      "isActive": true,
-      "createdAt": "2026-08-16T20:14:28.574Z",
-      "userId": "u-4b9c5464"
-    }
-  ],
+  "employees": [],
   "attendanceRecords": [],
   "leaveRequests": [],
   "salaryAdvances": [],
@@ -516,6 +482,54 @@
   "payrollRecords": [],
   "promotions": [],
   "auditLogs": [
+    {
+      "id": "al-476949d4",
+      "userId": "u-owner",
+      "userName": "المدير العام",
+      "action": "DELETE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1786911268574",
+      "detailsAr": "حذف الموظف وحسابه: ادم كمال",
+      "createdAt": "2026-08-17T21:52:50.773Z"
+    },
+    {
+      "id": "al-9700bf0e",
+      "userId": "u-owner",
+      "action": "DELETE_CATEGORY",
+      "entity": "CATEGORY",
+      "entityId": "cat-1",
+      "detailsAr": "حذف تصنيف: kqkqk",
+      "createdAt": "2026-08-17T21:52:22.852Z"
+    },
+    {
+      "id": "al-2256c25a",
+      "userId": "u-owner",
+      "action": "DISABLE_PRODUCT",
+      "entity": "PRODUCT",
+      "entityId": "p-1786909234725",
+      "detailsAr": "تعطيل المنتج: تاست",
+      "createdAt": "2026-08-17T21:52:10.431Z"
+    },
+    {
+      "id": "al-b11e6525",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-17T21:52:01.139Z"
+    },
+    {
+      "id": "al-0acd5c94",
+      "userId": "u-4b9c5464",
+      "userName": "ادم كمال",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-4b9c5464",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-17T21:41:06.518Z"
+    },
     {
       "id": "al-91179187",
       "userId": "u-4b9c5464",

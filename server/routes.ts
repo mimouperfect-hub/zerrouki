@@ -82,28 +82,29 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
 
     const users = db.get('users') || [];
 
-    // Find user by email, username, phone, or role alias
+    // Find user by exact email, username, or phone
     let user = users.find(u =>
       (u.email && u.email.toLowerCase() === rawInput) ||
       (u.username && u.username.toLowerCase() === rawInput) ||
       (u.phone && u.phone === rawInput)
     );
 
-    // Fallback alias lookup
-    if (!user) {
-      if (!rawInput || rawInput.includes('admin') || rawInput.includes('owner') || rawInput.includes('مدير')) {
-        user = users.find(u => u.roleCode === 'OWNER') || users[0];
-      } else if (rawInput.includes('cashier') || rawInput.includes('بائع') || rawInput.includes('كاشير')) {
-        user = users.find(u => u.roleCode === 'CASHIER');
-      } else if (rawInput.includes('store') || rawInput.includes('مخزن')) {
-        user = users.find(u => u.roleCode === 'STOREKEEPER');
-      } else if (rawInput.includes('account') || rawInput.includes('محاسب')) {
-        user = users.find(u => u.roleCode === 'ACCOUNTANT');
-      }
+    // General Manager (OWNER) alias shortcuts: "admin", "owner", "BRAHIME", "مدير"
+    if (!user && (rawInput === 'admin' || rawInput === 'owner' || rawInput === 'مدير' || rawInput.includes('admin@zerrouki'))) {
+      user = users.find(u => u.roleCode === 'OWNER') || users[0];
     }
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({ error: 'اسم المستخدم أو البريد الإلكتروني غير مسجل' });
+    if (!user || user.isActive === false) {
+      return res.status(401).json({ error: 'اسم المستخدم أو البريد الإلكتروني غير مسجل، أو تم حظر الحساب من طرف الإدارة' });
+    }
+
+    // Check if employee profile attached to regular employee users was deleted (exempting General Manager)
+    if (user.roleCode !== 'OWNER') {
+      const employees = db.get('employees') || [];
+      const emp = employees.find(e => e.userId === user!.id || (e.phone && e.phone === user!.phone) || (e.fullNameAr && e.fullNameAr.trim() === user!.name?.trim()));
+      if (emp && emp.isActive === false) {
+        return res.status(401).json({ error: 'تم حذف حساب هذا الموظف من طرف المدير العام ولا يمكنه الدخول إلى النظام.' });
+      }
     }
 
     // Validate password (accept user password or standard demo passwords 'admin', '123', 'admin123', '123456', '1234')
@@ -1843,20 +1844,19 @@ apiRouter.delete('/employees/:id', (req: Request, res: Response) => {
   const emp = employees[empIndex];
   console.log(`- Found employee to delete: "${emp.fullNameAr}" (id: ${emp.id}, userId: ${emp.userId})`);
 
-  // If employee has a linked user account, delete user account
+  // Thoroughly remove or deactivate any associated user accounts
   const users = db.get('users');
-  if (emp.userId) {
-    const uIdx = users.findIndex(u => u.id === emp.userId);
-    if (uIdx !== -1) {
-      console.log(`- Removing linked user account: "${users[uIdx].username}" (id: ${users[uIdx].id})`);
-      users.splice(uIdx, 1);
-    }
-  } else if (emp.fullNameAr) {
-    // Check if there is a user account with the same name
-    const uIdx = users.findIndex(u => u.name && u.name.trim() === emp.fullNameAr.trim());
-    if (uIdx !== -1 && users[uIdx].id !== 'u-owner') {
-      console.log(`- Removing user account matched by name: "${users[uIdx].username}"`);
-      users.splice(uIdx, 1);
+  for (let i = users.length - 1; i >= 0; i--) {
+    const u = users[i];
+    if (u.id === 'u-owner' || u.roleCode === 'OWNER') continue; // Do not delete main owner account
+
+    const isMatch = (emp.userId && u.id === emp.userId) ||
+      (emp.phone && u.phone && u.phone === emp.phone) ||
+      (emp.fullNameAr && u.name && u.name.trim() === emp.fullNameAr.trim());
+
+    if (isMatch) {
+      console.log(`- Removing user account associated with employee: "${u.username}" (id: ${u.id})`);
+      users.splice(i, 1);
     }
   }
 

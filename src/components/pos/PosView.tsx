@@ -56,6 +56,13 @@ export const PosView: React.FC = () => {
   useEffect(() => {
     loadPosData();
 
+    const handleProductsUpdated = () => {
+      loadPosData();
+    };
+
+    window.addEventListener('zerrouki:products-updated', handleProductsUpdated);
+    window.addEventListener('focus', handleProductsUpdated);
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore key events when typing inside text inputs, textareas, or select dropdowns
       const activeTag = (e.target as HTMLElement)?.tagName;
@@ -80,9 +87,11 @@ export const PosView: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
+      window.removeEventListener('zerrouki:products-updated', handleProductsUpdated);
+      window.removeEventListener('focus', handleProductsUpdated);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [products]);
+  }, []);
 
   // Click outside listener for customer search dropdown
   useEffect(() => {
@@ -132,6 +141,10 @@ export const PosView: React.FC = () => {
       setCategories(cats);
       setProducts(prods);
       setCustomers(custs);
+
+      // Clean deleted products out of active cashier cart
+      const validProductIds = new Set(prods.map(p => p.id));
+      setCart(prevCart => prevCart.filter(item => validProductIds.has(item.product.id)));
     } catch (e) {
       console.error('فشل تحميل بيانات واجهة البائع:', e);
     }
@@ -415,7 +428,7 @@ export const PosView: React.FC = () => {
         </div>
 
         {/* Product Cards Grid */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pr-1">
+        <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-max content-start gap-3 pr-1">
           {filteredProducts.length === 0 ? (
             <div className="col-span-full h-48 flex flex-col items-center justify-center text-center text-gray-400 bg-white/50 rounded-2xl border border-dashed border-gray-300">
               <Search className="w-8 h-8 mb-2 stroke-1 text-gray-300" />
@@ -435,7 +448,7 @@ export const PosView: React.FC = () => {
                 <div
                   key={product.id}
                   onClick={() => handleProductCardClick(product)}
-                  className={`bg-white p-3 rounded-2xl border transition-all flex flex-col justify-between select-none relative group ${
+                  className={`bg-white p-3 rounded-2xl border transition-all flex flex-col justify-between select-none relative group h-auto ${
                     isOutOfStock
                       ? 'opacity-50 border-red-200 cursor-not-allowed bg-red-50/20'
                       : 'border-purple-100 hover:border-amber-400 hover:shadow-lg hover:scale-[1.02] cursor-pointer active:scale-98'

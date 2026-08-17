@@ -28,6 +28,31 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScanAttendanceOpen, setIsScanAttendanceOpen] = useState(false);
 
+  const navigateTo = (view: ActiveView, replace: boolean = false) => {
+    setActiveView(view);
+    const hash = `#${view}`;
+    if (replace || window.location.hash === hash) {
+      window.history.replaceState({ view }, '', hash);
+    } else {
+      window.history.pushState({ view }, '', hash);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const stateView = e.state?.view;
+      const hashView = window.location.hash.replace('#', '') as ActiveView;
+      const targetView = stateView || hashView;
+
+      if (targetView && canAccessView(targetView)) {
+        setActiveView(targetView);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentUser]);
+
   useEffect(() => {
     // Check saved user session
     const savedUser = localStorage.getItem('zerrouki_user');
@@ -49,15 +74,18 @@ export default function App() {
   }, []);
 
   const setDefaultViewForRole = (user: User) => {
+    let initialView: ActiveView = 'DASHBOARD';
     if (user.roleCode === 'CASHIER') {
-      setActiveView('POS');
+      initialView = 'POS';
     } else if (user.roleCode === 'STOREKEEPER') {
-      setActiveView('PRODUCTS');
+      initialView = 'PRODUCTS';
     } else if (user.roleCode === 'ACCOUNTANT') {
-      setActiveView('CASH');
-    } else {
-      setActiveView('DASHBOARD');
+      initialView = 'CASH';
     }
+
+    const hashView = window.location.hash.replace('#', '') as ActiveView;
+    const effectiveView = hashView && canAccessView(hashView) ? hashView : initialView;
+    navigateTo(effectiveView, true);
   };
 
   const handleLoginSuccess = (user: User, token: string) => {
@@ -73,6 +101,7 @@ export default function App() {
     localStorage.removeItem('zerrouki_token');
     localStorage.removeItem('zerrouki_user');
     setCurrentUser(null);
+    window.history.replaceState(null, '', window.location.pathname);
   };
 
   // Permission check helper
@@ -154,7 +183,7 @@ export default function App() {
 
     switch (activeView) {
       case 'DASHBOARD':
-        return <DashboardView onNavigate={(view) => setActiveView(view)} />;
+        return <DashboardView onNavigate={(view) => navigateTo(view)} />;
       case 'POS':
         return <PosView />;
       case 'SALES':
@@ -186,7 +215,7 @@ export default function App() {
       case 'SETTINGS':
         return <SettingsView />;
       default:
-        return <DashboardView onNavigate={(view) => setActiveView(view)} />;
+        return <DashboardView onNavigate={(view) => navigateTo(view)} />;
     }
   };
 
@@ -195,7 +224,7 @@ export default function App() {
       {/* Top Header */}
       <Header
         activeView={activeView}
-        onNavigate={(view) => setActiveView(view)}
+        onNavigate={(view) => navigateTo(view)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         currentUser={currentUser}
         onLogout={handleLogout}
@@ -207,7 +236,7 @@ export default function App() {
         <Sidebar
           activeView={activeView}
           onNavigate={(view) => {
-            setActiveView(view);
+            navigateTo(view);
             setIsSidebarOpen(false);
           }}
           isOpen={isSidebarOpen}

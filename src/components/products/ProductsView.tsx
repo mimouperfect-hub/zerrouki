@@ -121,7 +121,8 @@ export const ProductsView: React.FC = () => {
         batchNumber: '',
         expirationDate: ''
       });
-      loadData();
+      await loadData();
+      window.dispatchEvent(new CustomEvent('zerrouki:products-updated'));
     } catch (err: any) {
       alert(err.message || 'فشلت إضافة المنتج');
     }
@@ -139,7 +140,8 @@ export const ProductsView: React.FC = () => {
     if (isConfirmed) {
       try {
         await api.deleteProduct(id);
-        loadData();
+        await loadData();
+        window.dispatchEvent(new CustomEvent('zerrouki:products-updated'));
       } catch (err: any) {
         platformAlert({ title: 'خطأ', message: err.message || 'فشل تعطيل المنتج', variant: 'error' });
       }
