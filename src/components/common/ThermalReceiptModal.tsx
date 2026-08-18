@@ -179,7 +179,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, 
 
                 {sale.userNameAr && (
                   <div className="flex justify-between text-gray-600">
-                    <span>البائع / الكاشير:</span>
+                    <span>البائع:</span>
                     <span className="text-gray-900">{sale.userNameAr}</span>
                   </div>
                 )}

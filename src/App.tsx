@@ -27,6 +27,17 @@ export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('DASHBOARD');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScanAttendanceOpen, setIsScanAttendanceOpen] = useState(false);
+  const mainContentRef = React.useRef<HTMLElement | null>(null);
+
+  // Automatically scroll to the top of the page when navigating between views
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeView]);
 
   const navigateTo = (view: ActiveView, replace: boolean = false) => {
     setActiveView(view);
@@ -244,7 +255,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main className="flex-1 overflow-y-auto min-w-0">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto min-w-0">
           {renderCurrentView()}
         </main>
       </div>

@@ -107,7 +107,7 @@ export const ALL_ROLES: Role[] = [
   {
     id: 'r3',
     code: 'CASHIER',
-    nameAr: 'أمين الصندوق (الكاشير/البائع)',
+    nameAr: 'أمين الصندوق (البائع)',
     descriptionAr: 'واجهة نقطة البيع POS والبيع المباشر والعملاء فقط',
     permissions: ['create_sale', 'manage_customers'],
     isSystem: true
@@ -177,7 +177,7 @@ function getInitialSeedData(): DatabaseSchema {
         username: 'cashier',
         email: 'cashier@zerrouki.dz',
         password: '123',
-        name: 'البائع (الكاشير)',
+        name: 'البائع',
         phone: '0661998877',
         roleCode: 'CASHIER',
         branchId: 'br-1',

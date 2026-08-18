@@ -56,7 +56,7 @@ export const SalesView: React.FC = () => {
   };
 
   // Staff List for Filter
-  const staffList = Array.from(new Set(sales.map((s) => s.createdByUserName || 'كاشير المحل'))).filter(Boolean);
+  const staffList = Array.from(new Set(sales.map((s) => s.createdByUserName || 'بائع المحل'))).filter(Boolean);
 
   const filteredSales = sales.filter((s) => {
     const q = searchQuery.toLowerCase().trim();
@@ -66,7 +66,7 @@ export const SalesView: React.FC = () => {
       (s.customerNameAr && s.customerNameAr.toLowerCase().includes(q)) ||
       s.createdByUserName.toLowerCase().includes(q);
 
-    const matchesStaff = !selectedStaffFilter || (s.createdByUserName || 'كاشير المحل') === selectedStaffFilter;
+    const matchesStaff = !selectedStaffFilter || (s.createdByUserName || 'بائع المحل') === selectedStaffFilter;
 
     return matchesQuery && matchesStaff;
   });
@@ -177,7 +177,7 @@ export const SalesView: React.FC = () => {
                       <td className="p-3.5 font-black text-purple-950 font-mono">{sale.invoiceNumber}</td>
                       <td className="p-3.5 font-mono text-slate-500 font-bold dir-ltr text-right">{formattedTime}</td>
                       <td className="p-3.5 font-black text-purple-950 bg-amber-50/50 rounded-lg">
-                        {sale.createdByUserName || 'كاشير المحل'}
+                        {sale.createdByUserName || 'بائع المحل'}
                       </td>
                       <td className="p-3.5 font-bold">{sale.customerNameAr || 'زبون عادي (مباشر)'}</td>
                       <td className="p-3.5 font-black text-amber-900 font-mono text-sm">

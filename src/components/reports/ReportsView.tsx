@@ -280,14 +280,14 @@ export const ReportsView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('STAFF_CATEGORY')}
-          className={`px-5 py-2.5 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'STAFF_CATEGORY'
               ? 'bg-purple-950 text-amber-300 shadow-md'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>أداء الكاشير والمبيعات حسب التصنيف</span>
+          <span>أداء البائع والمبيعات حسب التصنيف</span>
         </button>
       </div>
 
@@ -308,7 +308,7 @@ export const ReportsView: React.FC = () => {
                 <div className="flex justify-between p-3.5 bg-emerald-50 rounded-2xl text-emerald-950 border border-emerald-200 font-black">
                   <div>
                     <span>(+) إجمالي مبيعات المحل الكلية (Gross Sales):</span>
-                    <span className="block text-[10px] text-emerald-600 font-normal">إجمالي المداخيل المسجلة عبر الكاشير</span>
+                    <span className="block text-[10px] text-emerald-600 font-normal">إجمالي المداخيل المسجلة عبر البائع</span>
                   </div>
                   <span className="font-mono text-base text-emerald-700 font-black">{grossSales.toLocaleString()} د.ج</span>
                 </div>
@@ -535,7 +535,7 @@ export const ReportsView: React.FC = () => {
           {/* Sales by Staff Card */}
           <div className="bg-white p-6 rounded-3xl border border-purple-100 shadow-xs space-y-4">
             <h3 className="font-black text-purple-950 text-base border-b border-purple-100 pb-3">
-              أداء مبيعات الكاشير والموظفين (Staff Sales Performance)
+              أداء مبيعات البائعين والموظفين (Staff Sales Performance)
             </h3>
 
             <div className="space-y-3">

@@ -37,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isOpen
     // RULE 1: Dashboard (لوحة التحكم) is EXCLUSIVELY for General Manager (OWNER)
     if (item.id === 'DASHBOARD') return false;
 
-    // CASHIER (البائع / الكاشير) restriction: ONLY POS and CUSTOMERS
+    // CASHIER (البائع) restriction: ONLY POS and CUSTOMERS
     if (currentUser?.roleCode === 'CASHIER') {
       return item.id === 'POS' || item.id === 'CUSTOMERS';
     }
@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isOpen
               <div className="text-[10px] text-amber-300 font-extrabold mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
                 {currentUser.roleCode === 'OWNER' && 'المدير العام'}
-                {currentUser.roleCode === 'CASHIER' && 'بائع / كاشير'}
+                {currentUser.roleCode === 'CASHIER' && 'بائع'}
                 {currentUser.roleCode === 'STOREKEEPER' && 'مسؤول المخزن'}
                 {currentUser.roleCode === 'ACCOUNTANT' && 'محاسب المحل'}
                 {currentUser.roleCode === 'MANAGER' && 'مسؤول تنفيذي'}

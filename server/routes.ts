@@ -82,11 +82,14 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
 
     const users = db.get('users') || [];
 
-    // Find user by exact email, username, or phone
+    const cleanPhoneInput = rawInput.replace(/[\s\-\+\(\)]/g, '');
+
+    // Find user by exact email, username, or phone (normalized)
     let user = users.find(u =>
       (u.email && u.email.toLowerCase() === rawInput) ||
       (u.username && u.username.toLowerCase() === rawInput) ||
-      (u.phone && u.phone === rawInput)
+      (u.phone && u.phone === rawInput) ||
+      (u.phone && cleanPhoneInput.length >= 6 && u.phone.replace(/[\s\-\+\(\)]/g, '') === cleanPhoneInput)
     );
 
     // General Manager (OWNER) alias shortcuts: "admin", "owner", "BRAHIME", "مدير"
@@ -1659,7 +1662,7 @@ apiRouter.get('/employees', (req: Request, res: Response) => {
 });
 
 apiRouter.post('/employees', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
+  const currentUser = (req as any).user || { id: 'u-owner', name: 'المدير العام' };
   const {
     fullNameAr, phone, positionAr, contractType, salaryType, baseSalary,
     dailyRate, hourlyRate, commissionRatePercent, workingHoursPerDay, workingDaysPerMonth, restDayAr,
@@ -1675,50 +1678,58 @@ apiRouter.post('/employees', (req: Request, res: Response) => {
   const users = db.get('users');
 
   let linkedUserId: string | undefined = userId;
-  const loginName = (username || email || '').trim();
-  const pwd = (password || '').trim();
+  const cleanPhone = phone ? phone.trim() : '';
 
-  if ((createAccount || loginName) && pwd) {
-    if (!loginName) {
-      return res.status(400).json({ error: 'يرجى كتابة اسم المستخدم أو البريد الإلكتروني لدخول الموظف' });
-    }
+  // Determine login username (provided, phone, or auto-generated)
+  let loginName = (username || email || '').trim();
+  if (!loginName && cleanPhone) {
+    loginName = cleanPhone.replace(/[\s\-\+\(\)]/g, '');
+  }
+  if (!loginName) {
+    const rawClean = fullNameAr.trim().replace(/[^\w\s\u0600-\u06FF]/gi, '').replace(/\s+/g, '_').toLowerCase();
+    loginName = `emp_${rawClean || Date.now().toString().slice(-4)}`;
+  }
 
-    const existingUser = users.find(u =>
-      (u.username && u.username.toLowerCase() === loginName.toLowerCase()) ||
-      (u.email && u.email.toLowerCase() === loginName.toLowerCase())
-    );
+  // Password: explicitly specified or default standard '123456'
+  const pwd = (password || '').trim() || '123456';
 
-    if (existingUser) {
-      existingUser.password = pwd;
-      existingUser.name = fullNameAr.trim();
-      existingUser.phone = phone ? phone.trim() : existingUser.phone;
-      existingUser.roleCode = userRoleCode || 'CASHIER';
-      existingUser.isActive = true;
-      linkedUserId = existingUser.id;
-    } else {
-      const newUser: User = {
-        id: 'u-' + crypto.randomUUID().substring(0, 8),
-        username: loginName,
-        email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
-        password: pwd,
-        name: fullNameAr.trim(),
-        phone: phone ? phone.trim() : '',
-        roleCode: userRoleCode || 'CASHIER',
-        branchId: 'br-1',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      users.push(newUser);
-      linkedUserId = newUser.id;
-      db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف الجديد: ${fullNameAr} (${loginName})`, newUser.id);
-    }
+  // Always create or link a active user account for every employee added by GM
+  let existingUser = users.find(u =>
+    (u.username && u.username.toLowerCase() === loginName.toLowerCase()) ||
+    (u.email && u.email.toLowerCase() === loginName.toLowerCase()) ||
+    (cleanPhone && u.phone && u.phone.replace(/[\s\-\+\(\)]/g, '') === cleanPhone.replace(/[\s\-\+\(\)]/g, ''))
+  );
+
+  if (existingUser) {
+    existingUser.password = pwd;
+    existingUser.name = fullNameAr.trim();
+    existingUser.phone = cleanPhone || existingUser.phone;
+    existingUser.roleCode = userRoleCode || 'CASHIER';
+    existingUser.isActive = true;
+    linkedUserId = existingUser.id;
+  } else {
+    const newUser: User = {
+      id: 'u-' + crypto.randomUUID().substring(0, 8),
+      username: loginName,
+      email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
+      password: pwd,
+      name: fullNameAr.trim(),
+      phone: cleanPhone,
+      roleCode: userRoleCode || 'CASHIER',
+      branchId: 'br-1',
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    linkedUserId = newUser.id;
+    db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف الجديد: ${fullNameAr} (${loginName})`, newUser.id);
   }
 
   const newEmp: Employee = {
     id: 'emp-' + Date.now(),
     fullNameAr: fullNameAr.trim(),
-    phone: phone ? phone.trim() : '',
-    positionAr: positionAr ? positionAr.trim() : 'كاشير',
+    phone: cleanPhone,
+    positionAr: positionAr ? positionAr.trim() : 'موظف',
     branchId: 'br-1',
     startDate: new Date().toISOString().substring(0, 10),
     contractType: contractType || 'FULL_TIME',
@@ -1742,11 +1753,15 @@ apiRouter.post('/employees', (req: Request, res: Response) => {
   employees.push(newEmp);
   db.save();
   db.logAudit(currentUser.id, currentUser.name, 'CREATE_EMPLOYEE', 'EMPLOYEE', `إضافة موظف جديد: ${newEmp.fullNameAr}`, newEmp.id);
-  res.json(newEmp);
+  res.json({
+    ...newEmp,
+    loginUsername: loginName,
+    loginPassword: pwd
+  });
 });
 
 apiRouter.put('/employees/:id', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
+  const currentUser = (req as any).user || { id: 'u-owner', name: 'المدير العام' };
   const { id } = req.params;
   const {
     fullNameAr, phone, positionAr, contractType, salaryType, baseSalary,
@@ -1763,44 +1778,58 @@ apiRouter.put('/employees/:id', (req: Request, res: Response) => {
   const users = db.get('users');
 
   let linkedUserId = emp.userId;
-  const loginName = (username || email || '').trim();
+  const cleanPhone = phone !== undefined ? phone.trim() : emp.phone;
+  let loginName = (username || email || '').trim();
   const pwd = (password || '').trim();
 
-  if (loginName || pwd || createAccount) {
-    if (linkedUserId) {
-      const user = users.find(u => u.id === linkedUserId);
-      if (user) {
-        if (loginName) user.username = loginName;
-        if (loginName && loginName.includes('@')) user.email = loginName;
-        if (pwd) user.password = pwd;
-        if (userRoleCode) user.roleCode = userRoleCode;
-        if (fullNameAr) user.name = fullNameAr.trim();
-        if (phone) user.phone = phone.trim();
-        db.logAudit(currentUser.id, currentUser.name, 'UPDATE_USER', 'USER', `تحديث بيانات حساب الدخول للموظف: ${emp.fullNameAr}`, user.id);
-      }
-    } else if (loginName && pwd) {
-      const newUser: User = {
-        id: 'u-' + crypto.randomUUID().substring(0, 8),
-        username: loginName,
-        email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
-        password: pwd,
-        name: fullNameAr || emp.fullNameAr,
-        phone: phone || emp.phone,
-        roleCode: userRoleCode || 'CASHIER',
-        branchId: 'br-1',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      users.push(newUser);
-      linkedUserId = newUser.id;
-      db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف: ${emp.fullNameAr} (${loginName})`, newUser.id);
+  // Find or update linked user account
+  let linkedUser = linkedUserId ? users.find(u => u.id === linkedUserId) : null;
+  if (!linkedUser && cleanPhone) {
+    linkedUser = users.find(u => u.phone && u.phone.replace(/[\s\-\+\(\)]/g, '') === cleanPhone.replace(/[\s\-\+\(\)]/g, '')) || null;
+  }
+
+  if (linkedUser) {
+    if (loginName) {
+      linkedUser.username = loginName;
+      if (loginName.includes('@')) linkedUser.email = loginName;
     }
+    if (pwd) linkedUser.password = pwd;
+    if (userRoleCode) linkedUser.roleCode = userRoleCode;
+    if (fullNameAr) linkedUser.name = fullNameAr.trim();
+    if (cleanPhone) linkedUser.phone = cleanPhone;
+    linkedUser.isActive = isActive !== undefined ? isActive : true;
+    linkedUserId = linkedUser.id;
+    db.logAudit(currentUser.id, currentUser.name, 'UPDATE_USER', 'USER', `تحديث بيانات حساب الدخول للموظف: ${emp.fullNameAr}`, linkedUser.id);
+  } else {
+    if (!loginName && cleanPhone) {
+      loginName = cleanPhone.replace(/[\s\-\+\(\)]/g, '');
+    }
+    if (!loginName) {
+      loginName = `emp_${Date.now().toString().slice(-4)}`;
+    }
+    const finalPwd = pwd || '123456';
+
+    const newUser: User = {
+      id: 'u-' + crypto.randomUUID().substring(0, 8),
+      username: loginName,
+      email: loginName.includes('@') ? loginName : `${loginName}@zerrouki.dz`,
+      password: finalPwd,
+      name: fullNameAr ? fullNameAr.trim() : emp.fullNameAr,
+      phone: cleanPhone || emp.phone,
+      roleCode: userRoleCode || 'CASHIER',
+      branchId: 'br-1',
+      isActive: isActive !== undefined ? isActive : true,
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    linkedUserId = newUser.id;
+    db.logAudit(currentUser.id, currentUser.name, 'CREATE_USER', 'USER', `إنشاء حساب دخول للموظف: ${emp.fullNameAr} (${loginName})`, newUser.id);
   }
 
   employees[empIndex] = {
     ...emp,
     fullNameAr: fullNameAr ? fullNameAr.trim() : emp.fullNameAr,
-    phone: phone !== undefined ? phone.trim() : emp.phone,
+    phone: cleanPhone,
     positionAr: positionAr ? positionAr.trim() : emp.positionAr,
     contractType: contractType || emp.contractType,
     salaryType: salaryType || emp.salaryType,
@@ -2654,7 +2683,7 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
       id: 'emp-user-' + currentUser.id,
       fullNameAr: currentUser.name || currentUser.username || 'موظف في النظام',
       phone: currentUser.phone || '0550000000',
-      positionAr: currentUser.roleCode === 'CASHIER' ? 'كاشير' : currentUser.roleCode === 'STOREKEEPER' ? 'مسؤول المخزن' : 'موظف في النظام',
+      positionAr: currentUser.roleCode === 'CASHIER' ? 'بائع' : currentUser.roleCode === 'STOREKEEPER' ? 'مسؤول المخزن' : 'موظف في النظام',
       branchId: currentUser.branchId || 'br-1',
       startDate: new Date().toISOString().substring(0, 10),
       contractType: 'FULL_TIME',

@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">{currentUser.name}</span>
             <span className="bg-gradient-to-r from-purple-700 to-indigo-700 text-amber-200 text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-xs">
               {currentUser.roleCode === 'OWNER' && 'المدير العام'}
-              {currentUser.roleCode === 'CASHIER' && 'كاشير'}
+              {currentUser.roleCode === 'CASHIER' && 'بائع'}
               {currentUser.roleCode === 'STOREKEEPER' && 'المخزن'}
               {currentUser.roleCode === 'ACCOUNTANT' && 'محاسب'}
               {currentUser.roleCode === 'MANAGER' && 'مدير'}

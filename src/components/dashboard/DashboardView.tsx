@@ -1235,7 +1235,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               {/* Section 4: Signatures */}
               <div className="pt-8 border-t border-gray-300 grid grid-cols-2 gap-8 text-center text-xs font-bold text-gray-700">
                 <div className="space-y-8">
-                  <div>توقيع الكاشير / المسؤول عن الصندوق</div>
+                  <div>توقيع البائع / المسؤول عن الصندوق</div>
                   <div className="text-gray-400">__________________________</div>
                 </div>
                 <div className="space-y-8">

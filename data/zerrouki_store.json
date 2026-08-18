@@ -91,7 +91,7 @@
     {
       "id": "r3",
       "code": "CASHIER",
-      "nameAr": "أمين الصندوق (الكاشير/البائع)",
+      "nameAr": "أمين الصندوق (البائع)",
       "descriptionAr": "واجهة نقطة البيع POS والبيع المباشر والعملاء فقط",
       "permissions": [
         "create_sale",
@@ -291,14 +291,14 @@
       "pinCode": "1234",
       "avatarUrl": "",
       "createdAt": "2026-08-09T20:34:58.094Z",
-      "lastLoginAt": "2026-08-17T21:52:01.129Z"
+      "lastLoginAt": "2026-08-18T06:07:30.716Z"
     },
     {
       "id": "u-cashier",
       "username": "cashier",
       "email": "cashier@zerrouki.dz",
       "password": "123",
-      "name": "البائع (الكاشير)",
+      "name": "البائع",
       "phone": "0661998877",
       "roleCode": "CASHIER",
       "branchId": "br-1",
@@ -331,6 +331,19 @@
       "isActive": true,
       "createdAt": "2026-08-09T20:34:58.095Z",
       "lastLoginAt": "2026-08-10T18:15:39.379Z"
+    },
+    {
+      "id": "u-357f8577",
+      "username": "kamel",
+      "email": "kamel@zerrouki.dz",
+      "password": "1234",
+      "name": "kamel",
+      "phone": "0662213717",
+      "roleCode": "CASHIER",
+      "branchId": "br-1",
+      "isActive": true,
+      "createdAt": "2026-08-18T06:13:30.567Z",
+      "lastLoginAt": "2026-08-18T06:13:59.574Z"
     }
   ],
   "categories": [
@@ -472,7 +485,34 @@
     }
   ],
   "expenses": [],
-  "employees": [],
+  "employees": [
+    {
+      "id": "emp-1787033610571",
+      "fullNameAr": "kamel",
+      "phone": "0662213717",
+      "positionAr": "بائع",
+      "branchId": "br-1",
+      "startDate": "2026-08-18",
+      "contractType": "FULL_TIME",
+      "salaryType": "MONTHLY",
+      "baseSalary": 40000,
+      "dailyRate": 0,
+      "hourlyRate": 0,
+      "commissionRatePercent": 0,
+      "workingHoursPerDay": 8,
+      "workingDaysPerMonth": 26,
+      "restDayAr": "الجمعة",
+      "workStartTime": "08:00",
+      "workEndTime": "17:00",
+      "offDays": [
+        "الجمعة"
+      ],
+      "lateToleranceMinutes": 15,
+      "userId": "u-357f8577",
+      "isActive": true,
+      "createdAt": "2026-08-18T06:13:30.571Z"
+    }
+  ],
   "attendanceRecords": [],
   "leaveRequests": [],
   "salaryAdvances": [],
@@ -482,6 +522,44 @@
   "payrollRecords": [],
   "promotions": [],
   "auditLogs": [
+    {
+      "id": "al-b5d598ec",
+      "userId": "u-357f8577",
+      "userName": "kamel",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-357f8577",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-18T06:13:59.578Z"
+    },
+    {
+      "id": "al-b84f536e",
+      "userId": "u-owner",
+      "action": "CREATE_EMPLOYEE",
+      "entity": "EMPLOYEE",
+      "entityId": "emp-1787033610571",
+      "detailsAr": "إضافة موظف جديد: kamel",
+      "createdAt": "2026-08-18T06:13:30.577Z"
+    },
+    {
+      "id": "al-eaeac74f",
+      "userId": "u-owner",
+      "action": "CREATE_USER",
+      "entity": "USER",
+      "entityId": "u-357f8577",
+      "detailsAr": "إنشاء حساب دخول للموظف الجديد: kamel (kamel)",
+      "createdAt": "2026-08-18T06:13:30.568Z"
+    },
+    {
+      "id": "al-cd67957e",
+      "userId": "u-owner",
+      "userName": "المدير العام (صاحب المحل)",
+      "action": "LOGIN",
+      "entity": "USER",
+      "entityId": "u-owner",
+      "detailsAr": "تسجيل دخول ناجح للنظام",
+      "createdAt": "2026-08-18T06:07:30.721Z"
+    },
     {
       "id": "al-476949d4",
       "userId": "u-owner",
@@ -686,7 +764,7 @@
     {
       "id": "al-068a53fa",
       "userId": "u-cashier",
-      "userName": "البائع (الكاشير)",
+      "userName": "البائع",
       "action": "LOGIN",
       "entity": "USER",
       "entityId": "u-cashier",

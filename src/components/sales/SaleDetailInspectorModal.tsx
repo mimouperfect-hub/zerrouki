@@ -146,7 +146,7 @@ export const SaleDetailInspectorModal: React.FC<SaleDetailInspectorModalProps> =
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-bold">
                 <div>
-                  <span className="text-slate-500 block text-[11px]">اسم الموظف / الكاشير الصادر منه:</span>
+                  <span className="text-slate-500 block text-[11px]">اسم الموظف / البائع الصادر منه:</span>
                   <span className="text-purple-950 font-black text-sm">{sale.createdByUserName}</span>
                 </div>
 
@@ -258,7 +258,7 @@ export const SaleDetailInspectorModal: React.FC<SaleDetailInspectorModalProps> =
               <div className="bg-gradient-to-r from-purple-950 to-indigo-900 text-amber-300 p-4 rounded-2xl flex flex-col justify-between shadow-md">
                 <div className="flex items-center gap-2">
                   <Lock className="w-4 h-4 text-amber-300" />
-                  <span className="text-xs font-black">إقرار ومسؤولية الكاشير</span>
+                  <span className="text-xs font-black">إقرار ومسؤولية البائع</span>
                 </div>
                 <p className="text-[11px] text-purple-200 font-bold mt-1">
                   هذه الفاتورة موثقة بالساعة والدقيقة تحت حساب الموظف <b>({sale.createdByUserName})</b> للمحاسبة والتدقيق الإداري.
@@ -272,7 +272,7 @@ export const SaleDetailInspectorModal: React.FC<SaleDetailInspectorModalProps> =
             {/* Footer Audit Signatures */}
             <div className="grid grid-cols-2 gap-8 pt-6 border-t border-dashed border-slate-300 text-center font-bold text-xs text-slate-700">
               <div>
-                <p className="mb-8 font-black">اسم وتوقيع الموظف (الكاشير):</p>
+                <p className="mb-8 font-black">اسم وتوقيع الموظف (البائع):</p>
                 <div className="h-10 border-b border-slate-300 border-dashed w-48 mx-auto flex items-end justify-center pb-1 font-black text-purple-950">
                   {sale.createdByUserName}
                 </div>

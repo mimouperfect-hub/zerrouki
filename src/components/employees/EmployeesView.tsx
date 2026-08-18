@@ -24,7 +24,7 @@ export const EmployeesView: React.FC = () => {
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [fullNameAr, setFullNameAr] = useState('');
   const [phone, setPhone] = useState('');
-  const [positionAr, setPositionAr] = useState('كاشير');
+  const [positionAr, setPositionAr] = useState('');
   const [baseSalary, setBaseSalary] = useState(40000);
   const [commissionRatePercent, setCommissionRatePercent] = useState(0);
 
@@ -85,7 +85,7 @@ export const EmployeesView: React.FC = () => {
     setEditingEmp(null);
     setFullNameAr('');
     setPhone('');
-    setPositionAr('كاشير');
+    setPositionAr('');
     setBaseSalary(40000);
     setCommissionRatePercent(0);
     setCreateAccount(true);
@@ -99,7 +99,7 @@ export const EmployeesView: React.FC = () => {
     setEditingEmp(emp);
     setFullNameAr(emp.fullNameAr || '');
     setPhone(emp.phone || '');
-    setPositionAr(emp.positionAr || 'كاشير');
+    setPositionAr(emp.positionAr || '');
     setBaseSalary(emp.baseSalary || 40000);
     setCommissionRatePercent(emp.commissionRatePercent || 0);
 
@@ -610,7 +610,12 @@ export const EmployeesView: React.FC = () => {
               filteredEmployees.map((emp) => {
                 const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
                 const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
-                const linkedUser = emp.userId ? systemUsers.find((u) => u.id === emp.userId) : null;
+                const linkedUser = emp.userId
+                  ? systemUsers.find((u) => u.id === emp.userId)
+                  : systemUsers.find((u) =>
+                      (u.phone && emp.phone && u.phone.replace(/[\s\-\+\(\)]/g, '') === emp.phone.replace(/[\s\-\+\(\)]/g, '')) ||
+                      (u.name && u.name.trim() === emp.fullNameAr.trim())
+                    ) || null;
 
                 return (
                   <div
@@ -641,7 +646,7 @@ export const EmployeesView: React.FC = () => {
                             </span>
                             <span className="text-[10px] text-amber-900 bg-amber-200 px-1.5 py-0.2 rounded-md font-bold">
                               {linkedUser.roleCode === 'CASHIER'
-                                ? 'كاشير'
+                                ? 'بائع'
                                 : linkedUser.roleCode === 'STOREKEEPER'
                                 ? 'مخزن'
                                 : linkedUser.roleCode === 'ACCOUNTANT'
@@ -788,7 +793,7 @@ export const EmployeesView: React.FC = () => {
                       required
                       value={positionAr}
                       onChange={(e) => setPositionAr(e.target.value)}
-                      placeholder="كاشير، مسؤول مخزن..."
+                      placeholder="بائع، مسؤول مخزن..."
                       className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-bold"
                     />
                   </div>
@@ -885,7 +890,7 @@ export const EmployeesView: React.FC = () => {
                           onChange={(e) => setUserRoleCode(e.target.value)}
                           className="w-full pr-9 pl-3 py-2 bg-white border border-purple-300 rounded-xl outline-none font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-400"
                         >
-                          <option value="CASHIER">أمين الصندوق / الكاشير (واجهة البيع POS)</option>
+                          <option value="CASHIER">أمين الصندوق / البائع (واجهة البيع POS)</option>
                           <option value="STOREKEEPER">مسؤول المخزن (المنتجات والمشتريات)</option>
                           <option value="ACCOUNTANT">المحاسب المالي (المصاريف والتقارير والرواتب)</option>
                           <option value="MANAGER">المسؤول التنفيذي للمحل</option>
