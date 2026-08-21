@@ -2,25 +2,61 @@ import React, { useEffect, useState } from 'react';
 import { QrCode, Printer, X, ShieldCheck, Sparkles, Building2, UserCheck } from 'lucide-react';
 import QRCode from 'qrcode';
 import { BrandLogo } from '../common/BrandLogo';
+import { api } from '../../api/client';
 
 interface ManagerAttendanceQRModalProps {
   isOpen: boolean;
   onClose: () => void;
-  qrToken: string;
-  storeName: string;
+  qrToken?: string;
+  storeName?: string;
 }
 
 export const ManagerAttendanceQRModal: React.FC<ManagerAttendanceQRModalProps> = ({
   isOpen,
   onClose,
-  qrToken,
-  storeName
+  qrToken: propQrToken,
+  storeName: propStoreName
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [activeStoreName, setActiveStoreName] = useState<string>(propStoreName || 'مؤسسة زروقي للحلويات');
+  const [activeQrToken, setActiveQrToken] = useState<string>(propQrToken || 'ZERROUKI_ATTENDANCE_MAIN_STORE_2026');
 
   useEffect(() => {
-    if (qrToken && isOpen) {
-      QRCode.toDataURL(qrToken, {
+    if (propStoreName) setActiveStoreName(propStoreName);
+  }, [propStoreName]);
+
+  useEffect(() => {
+    if (propQrToken) setActiveQrToken(propQrToken);
+  }, [propQrToken]);
+
+  useEffect(() => {
+    if (isOpen) {
+      api.getSettings().then((s) => {
+        if (s?.storeNameAr) {
+          setActiveStoreName(s.storeNameAr);
+        }
+      }).catch(console.error);
+
+      api.getManagerAttendanceQR().then((res) => {
+        if (res?.storeName) setActiveStoreName(res.storeName);
+        if (res?.qrToken) setActiveQrToken(res.qrToken);
+      }).catch(console.error);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleSettingsUpdated = (e: any) => {
+      if (e.detail?.storeNameAr) {
+        setActiveStoreName(e.detail.storeNameAr);
+      }
+    };
+    window.addEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+  }, []);
+
+  useEffect(() => {
+    if (activeQrToken && isOpen) {
+      QRCode.toDataURL(activeQrToken, {
         width: 320,
         margin: 2,
         color: {
@@ -32,7 +68,7 @@ export const ManagerAttendanceQRModal: React.FC<ManagerAttendanceQRModalProps> =
         .then((url) => setQrDataUrl(url))
         .catch((err) => console.error('Failed to generate QR Data URL:', err));
     }
-  }, [qrToken, isOpen]);
+  }, [activeQrToken, isOpen]);
 
   if (!isOpen) return null;
 
@@ -104,7 +140,7 @@ export const ManagerAttendanceQRModal: React.FC<ManagerAttendanceQRModalProps> =
               <div className="p-3 bg-gradient-to-tr from-[#2E1065] to-[#3B0764] rounded-2xl shadow-md border border-amber-300">
                 <BrandLogo size="lg" />
               </div>
-              <h1 className="text-2xl font-black text-purple-950">{storeName}</h1>
+              <h1 className="text-2xl font-black text-purple-950">{activeStoreName}</h1>
               <p className="text-xs font-black text-amber-900 bg-amber-100 px-4 py-1 rounded-full border border-amber-200">
                 نظام تسجيل الحضور والانصراف الذكي المعتمد 📌
               </p>
@@ -136,13 +172,13 @@ export const ManagerAttendanceQRModal: React.FC<ManagerAttendanceQRModalProps> =
               )}
               <div className="mt-3 text-[11px] font-black text-purple-900 bg-purple-50 px-3.5 py-1.5 rounded-full border border-purple-200 inline-flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>رمز توثيق ذكي معتمد رسمياً للفرع</span>
+                <span>رمز توثيق ذكي معتمد رسمياً</span>
               </div>
             </div>
 
             {/* Verification Footer */}
             <div className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-bold space-y-1 w-full">
-              <div>صادر عن إدارة المدير العام - {storeName || 'مؤسسة زروقي للحلويات'}</div>
+              <div>صادر عن إدارة المدير العام - {activeStoreName}</div>
               <div className="font-mono text-[10px] text-purple-900">تاريخ التحديث: {new Date().toLocaleDateString('ar-DZ')}</div>
             </div>
           </div>

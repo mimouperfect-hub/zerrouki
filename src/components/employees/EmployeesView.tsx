@@ -307,7 +307,13 @@ export const EmployeesView: React.FC = () => {
 
           {/* General Manager Printable QR Button */}
           <button
-            onClick={() => setIsManagerQRModalOpen(true)}
+            onClick={async () => {
+              try {
+                const s = await api.getSettings();
+                if (s?.storeNameAr) setStoreName(s.storeNameAr);
+              } catch (e) {}
+              setIsManagerQRModalOpen(true);
+            }}
             className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-amber-300 font-black text-xs shadow-md hover:brightness-110 transition-all flex items-center gap-2 cursor-pointer border border-amber-300/30"
           >
             <QrCode className="w-4 h-4 text-amber-400" />
