@@ -109,7 +109,7 @@ export const ScanAttendanceModal: React.FC<ScanAttendanceModalProps> = ({
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
-  const handleValidQRDetected = async (rawCode: string) => {
+  const handleValidQRDetected = async (rawCode: string, forceCheckOut: boolean = false) => {
     if (isProcessingRef.current || isSubmitting) return;
     isProcessingRef.current = true;
 
@@ -137,7 +137,7 @@ export const ScanAttendanceModal: React.FC<ScanAttendanceModalProps> = ({
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      const res = await api.scanAttendanceQR(token);
+      const res = await api.scanAttendanceQR(token, forceCheckOut);
       setResultMessage(res);
       window.dispatchEvent(new CustomEvent('zerrouki_attendance_updated'));
       onScanSuccess();
@@ -271,37 +271,70 @@ export const ScanAttendanceModal: React.FC<ScanAttendanceModalProps> = ({
         {/* Modal Body */}
         <div className="p-4 flex flex-col flex-1 overflow-y-auto">
           {resultMessage ? (
-            <div className="p-6 bg-emerald-50 border-2 border-emerald-300 rounded-3xl text-center space-y-4 animate-in zoom-in-95 my-auto">
-              <div className="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto shadow-lg ring-8 ring-emerald-100">
-                <Check className="w-8 h-8" />
+            <div className={`p-6 rounded-3xl text-center space-y-4 animate-in zoom-in-95 my-auto border-2 ${
+              resultMessage.action === 'ALREADY_CHECKED_IN'
+                ? 'bg-amber-50/80 border-amber-300'
+                : 'bg-emerald-50 border-emerald-300'
+            }`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-lg ring-8 ${
+                resultMessage.action === 'ALREADY_CHECKED_IN'
+                  ? 'bg-amber-500 text-white ring-amber-100'
+                  : 'bg-emerald-600 text-white ring-emerald-100'
+              }`}>
+                {resultMessage.action === 'ALREADY_CHECKED_IN' ? (
+                  <Check className="w-8 h-8" />
+                ) : (
+                  <Check className="w-8 h-8" />
+                )}
               </div>
               <div className="space-y-2">
-                <h4 className="font-black text-lg text-emerald-950">{resultMessage.message}</h4>
-                <div className="p-3 bg-white/80 rounded-2xl border border-emerald-200 text-xs font-black text-emerald-900 space-y-1">
-                  <div>الموظف: <span className="text-purple-950 font-black">{resultMessage.employeeName}</span></div>
-                  <div>الإجراء: <span className="font-black text-purple-900">{resultMessage.action === 'CHECK_IN' ? 'تسجيل دخول (حضور صباحي) 🌅' : resultMessage.action === 'CHECK_OUT' ? 'تسجيل خروج (انصراف مسائي) 🌇' : 'مكتمل لهذا اليوم ✅'}</span></div>
+                <h4 className={`font-black text-base whitespace-pre-line leading-relaxed ${
+                  resultMessage.action === 'ALREADY_CHECKED_IN' ? 'text-amber-950' : 'text-emerald-950'
+                }`}>
+                  {resultMessage.message}
+                </h4>
+
+                <div className="p-3 bg-white/90 rounded-2xl border border-amber-200 text-xs font-black text-purple-950 space-y-1 text-right">
+                  <div>الموظف: <span className="text-purple-900 font-bold">{resultMessage.employeeName}</span></div>
+                  <div>الإجراء الحالي: <span className="font-bold text-purple-950">{
+                    resultMessage.action === 'CHECK_IN' ? 'تسجيل دخول (حضور صباحي جديد) 🌅' :
+                    resultMessage.action === 'CHECK_OUT' ? 'تسجيل خروج (انصراف مسائي) 🌇' :
+                    resultMessage.action === 'ALREADY_CHECKED_IN' ? 'حضورك مسجل بالفعل (دوام قيد التنفيذ) 🟢' :
+                    'مكتمل الحضور والانصراف لهذا اليوم ✅'
+                  }</span></div>
                   {resultMessage.status && (
-                    <div>الحالة: <span className="text-emerald-700">{
+                    <div>حالة الانضباط: <span className="text-emerald-700">{
                       resultMessage.status === 'PRESENT' ? 'حاضر في الموعد 🟢' :
                       resultMessage.status === 'LATE' ? 'حاضر (متأخر) 🟡' :
                       resultMessage.status === 'REST_DAY' ? 'حضور في عطلة أسبوعية 🔵' : 'مسجل 🔴'
                     }</span></div>
                   )}
                   {resultMessage.checkIn && (
-                    <div className="text-[11px] text-slate-600">وقت الحضور: {resultMessage.checkIn}</div>
+                    <div className="text-[11px] text-slate-600">وقت الحضور المسجل: <span className="font-mono font-bold text-purple-950">{resultMessage.checkIn}</span></div>
                   )}
                   {resultMessage.checkOut && (
-                    <div className="text-[11px] text-slate-600">وقت الانصراف: {resultMessage.checkOut} ({resultMessage.workingHours} ساعة)</div>
+                    <div className="text-[11px] text-slate-600">وقت الانصراف المسجل: <span className="font-mono font-bold text-purple-950">{resultMessage.checkOut} ({resultMessage.workingHours} ساعة)</span></div>
                   )}
                 </div>
               </div>
 
-              <button
-                onClick={onClose}
-                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl font-black text-xs hover:brightness-110 shadow-md cursor-pointer transition-all active:scale-98"
-              >
-                حسناً، إغلاق النافذة ✨
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={onClose}
+                  className="w-full py-3 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 text-amber-300 rounded-2xl font-black text-xs hover:brightness-110 shadow-md cursor-pointer transition-all active:scale-98"
+                >
+                  حسناً، فهمت وإغلاق النافذة ✨
+                </button>
+
+                {resultMessage.action === 'ALREADY_CHECKED_IN' && resultMessage.allowEarlyCheckout && (
+                  <button
+                    onClick={() => handleValidQRDetected(scannedCode || '', true)}
+                    className="w-full py-2 bg-transparent text-rose-700 hover:bg-rose-50 rounded-xl font-bold text-[11px] border border-rose-200 transition-colors cursor-pointer"
+                  >
+                    تسجيل انصراف مبكر الآن (حالة استثنائية) 🚪
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col space-y-3 flex-1">

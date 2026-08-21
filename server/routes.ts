@@ -2070,7 +2070,7 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
         : `✅ تم تسجيل حضورك الصباحي بنجاح الساعة ${currentTime}`
     });
   } else {
-    // CHECK OUT
+    // 2. ALREADY RECORDED TODAY
     if (todayRecord.checkOut) {
       return res.json({
         success: true,
@@ -2079,18 +2079,41 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
         status: todayRecord.status,
         checkIn: todayRecord.checkIn,
         checkOut: todayRecord.checkOut,
-        message: `تم تسجيل حضور وانصراف الموظف ${emp.fullNameAr} لهذا اليوم بالفعل`
+        workingHours: todayRecord.workingHours,
+        message: `تم تسجيل حضورك (${todayRecord.checkIn}) وانصرافك (${todayRecord.checkOut}) لهذا اليوم بالفعل بنجاح.`
       });
     }
 
+    // CHECK-IN EXISTS: VERIFY IF IT IS TIME FOR CHECK-OUT
     const [inH, inM] = (todayRecord.checkIn || '08:00').split(':').map(Number);
-    const [outH, outM] = currentTime.split(':').map(Number);
-
+    const [currH, currM] = currentTime.split(':').map(Number);
     const inTotalM = inH * 60 + inM;
-    const outTotalM = outH * 60 + outM;
-    const diffM = Math.max(0, outTotalM - inTotalM);
+    const currTotalM = currH * 60 + currM;
+    const diffMinutes = Math.max(0, currTotalM - inTotalM);
 
-    const workedHours = Number((diffM / 60).toFixed(1));
+    const endStr = emp.workEndTime || '17:00';
+    const [endH, endM] = endStr.split(':').map(Number);
+    const endTotalM = endH * 60 + endM;
+
+    // Check if shift end time reached, or at least 3 hours elapsed, or forceCheckOut passed
+    const isShiftEndReached = currTotalM >= (endTotalM - 30);
+    const hasWorkedMinimumDuration = diffMinutes >= 180; // at least 3 hours
+
+    if (!isShiftEndReached && !hasWorkedMinimumDuration && !req.body.forceCheckOut) {
+      // Prevent accidental rescan / duplicate attendance during shift
+      return res.json({
+        success: true,
+        action: 'ALREADY_CHECKED_IN',
+        employeeName: emp.fullNameAr,
+        status: todayRecord.status,
+        checkIn: todayRecord.checkIn,
+        message: `🟢 لقد تم تسجيل حضورك الصباحي مسبقاً اليوم الساعة ${todayRecord.checkIn} بنجاح.\nلا داعي لإعادة المسح، تسجيل الانصراف يتم عند نهاية فترة دوامك (المحدد الساعة ${endStr}).`,
+        allowEarlyCheckout: true
+      });
+    }
+
+    // PROCEED TO CHECK OUT
+    const workedHours = Number((diffMinutes / 60).toFixed(1));
     const expectedHours = emp.workingHoursPerDay || 8;
     const overtimeHours = Math.max(0, Number((workedHours - expectedHours).toFixed(1)));
 

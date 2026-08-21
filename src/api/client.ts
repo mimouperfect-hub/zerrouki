@@ -158,7 +158,7 @@ export const api = {
     fetchApi<Employee>(`/employees/${id}/schedule`, { method: 'PUT', body: JSON.stringify(data) }),
   getAttendance: () => fetchApi<AttendanceRecord[]>('/attendance'),
   getManagerAttendanceQR: () => fetchApi<{ qrToken: string; qrPayload: string; storeName?: string }>('/attendance/manager-qr'),
-  scanAttendanceQR: (qrToken: string) => fetchApi<any>('/attendance/scan-qr', { method: 'POST', body: JSON.stringify({ qrToken }) }),
+  scanAttendanceQR: (qrToken: string, forceCheckOut?: boolean) => fetchApi<any>('/attendance/scan-qr', { method: 'POST', body: JSON.stringify({ qrToken, forceCheckOut }) }),
   recordManualAttendance: (data: any) => fetchApi<AttendanceRecord>('/attendance/manual', { method: 'POST', body: JSON.stringify(data) }),
   checkInEmployee: (employeeId: string, notes?: string) => fetchApi<any>('/attendance/check-in', { method: 'POST', body: JSON.stringify({ employeeId, notes }) }),
   checkOutEmployee: (employeeId: string, notes?: string) => fetchApi<any>('/attendance/check-out', { method: 'POST', body: JSON.stringify({ employeeId, notes }) }),
