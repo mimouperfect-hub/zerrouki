@@ -341,6 +341,84 @@ export const EmployeesView: React.FC = () => {
     return matchesSearch && matchesEmp && matchesStatus;
   });
 
+  // Centralized unified employee attendance summary helper (synchronizes calculations across all 3 tabs)
+  const getEmployeeAttendanceSummary = (emp: Employee) => {
+    const empAtts = attendanceRecords.filter((a) => a.employeeId === emp.id);
+    const presentDays = empAtts.filter((a) => a.status === 'PRESENT').length;
+    const lateDays = empAtts.filter((a) => a.status === 'LATE').length;
+    const restDays = empAtts.filter((a) => a.status === 'REST_DAY').length;
+    const leaveDays = empAtts.filter((a) => a.status === 'LEAVE').length;
+    const absentDays = empAtts.filter((a) => a.status === 'ABSENT').length;
+    const totalWorkedHours = Number(empAtts.reduce((sum, a) => sum + (a.workingHours || 0), 0).toFixed(1));
+    const totalOvertime = Number(empAtts.reduce((sum, a) => sum + (a.overtimeHours || 0), 0).toFixed(1));
+
+    const totalEvaluated = presentDays + lateDays + restDays + leaveDays + absentDays;
+    const complianceRate = totalEvaluated > 0
+      ? Math.round(((presentDays + restDays + leaveDays) / totalEvaluated) * 100)
+      : 100;
+
+    const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
+    const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
+
+    // Today's Live Status for this employee
+    const todayLog = todayAttendance.find((a) => a.employeeId === emp.id);
+    const isOffToday = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
+
+    let todayStatusText = '';
+    let todayStatusClass = '';
+    let todayStatusShort = '';
+    if (todayLog) {
+      if (todayLog.status === 'PRESENT') {
+        todayStatusText = `حاضر اليوم في الموعد 🟢 (${todayLog.checkIn})`;
+        todayStatusShort = `حاضر 🟢 (${todayLog.checkIn})`;
+        todayStatusClass = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+      } else if (todayLog.status === 'LATE') {
+        todayStatusText = `حاضر اليوم (متأخر) 🟡 (${todayLog.checkIn})`;
+        todayStatusShort = `متأخر 🟡 (${todayLog.checkIn})`;
+        todayStatusClass = 'bg-amber-100 text-amber-900 border-amber-300';
+      } else if (todayLog.status === 'REST_DAY') {
+        todayStatusText = `حضور في عطلة أسبوعية 🔵 (${todayLog.checkIn})`;
+        todayStatusShort = `عطلة + حضور 🔵`;
+        todayStatusClass = 'bg-blue-100 text-blue-900 border-blue-300';
+      } else if (todayLog.status === 'LEAVE') {
+        todayStatusText = 'في إجازة رسمية مبررة 🟣';
+        todayStatusShort = 'إجازة مبررة 🟣';
+        todayStatusClass = 'bg-purple-100 text-purple-900 border-purple-300';
+      } else {
+        todayStatusText = 'مسجل حضور';
+        todayStatusShort = 'مسجل';
+        todayStatusClass = 'bg-slate-100 text-slate-800 border-slate-300';
+      }
+    } else if (isOffToday) {
+      todayStatusText = 'في عطلة أسبوعية اليوم 🔵';
+      todayStatusShort = 'عطلة أسبوعية 🔵';
+      todayStatusClass = 'bg-blue-50 text-blue-800 border-blue-200';
+    } else {
+      todayStatusText = 'لم يسجل حضور اليوم بعد 🔴';
+      todayStatusShort = 'لم يسجل بعد 🔴';
+      todayStatusClass = 'bg-rose-50 text-rose-800 border-rose-200';
+    }
+
+    return {
+      empAtts,
+      presentDays,
+      lateDays,
+      restDays,
+      leaveDays,
+      absentDays,
+      totalWorkedHours,
+      totalOvertime,
+      complianceRate,
+      shiftStr,
+      offDaysStr,
+      todayLog,
+      isOffToday,
+      todayStatusText,
+      todayStatusShort,
+      todayStatusClass
+    };
+  };
+
   return (
     <div className="p-6 space-y-6 animate-in fade-in duration-200 dir-rtl">
       {/* Header */}
@@ -411,7 +489,7 @@ export const EmployeesView: React.FC = () => {
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>سجل وتتبع الحضور المفصل ({attendanceRecords.length})</span>
+          <span>سجل وتتبع الحضور المفصل ({allAttendanceViewList.length})</span>
         </button>
 
         <button
@@ -423,7 +501,7 @@ export const EmployeesView: React.FC = () => {
           }`}
         >
           <BarChart2 className="w-4 h-4" />
-          <span>بطاقات الانضباط والالتزام اليومي لكل عامل</span>
+          <span>بطاقات الانضباط والالتزام اليومي لكل عامل ({filteredEmployees.length})</span>
         </button>
 
         <button
@@ -435,7 +513,7 @@ export const EmployeesView: React.FC = () => {
           }`}
         >
           <UserCheck className="w-4 h-4" />
-          <span>دليل وعقود وحسابات الموظفين ({employees.length})</span>
+          <span>دليل وعقود وحسابات الموظفين ({filteredEmployees.length})</span>
         </button>
       </div>
 
@@ -699,144 +777,120 @@ export const EmployeesView: React.FC = () => {
 
       {/* TAB 2: EMPLOYEE COMPLIANCE SCORECARDS */}
       {activeTab === 'SCORECARDS' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {employees.map((emp) => {
-            const empAtts = attendanceRecords.filter((a) => a.employeeId === emp.id);
-            const presentDays = empAtts.filter((a) => a.status === 'PRESENT').length;
-            const lateDays = empAtts.filter((a) => a.status === 'LATE').length;
-            const restDays = empAtts.filter((a) => a.status === 'REST_DAY').length;
-            const leaveDays = empAtts.filter((a) => a.status === 'LEAVE').length;
-            const absentDays = empAtts.filter((a) => a.status === 'ABSENT').length;
-            const totalWorkedHours = empAtts.reduce((sum, a) => sum + (a.workingHours || 0), 0);
-            const totalOvertime = empAtts.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
+        <div className="space-y-4">
+          <div className="bg-white p-3.5 rounded-2xl border border-purple-100 shadow-xs flex items-center gap-3">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ابحث باسم الموظف أو المسمى الوظيفي في بطاقات الانضباط..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent text-xs font-bold text-purple-950 outline-none"
+            />
+          </div>
 
-            const totalEvaluated = presentDays + lateDays + restDays + leaveDays + absentDays;
-            const complianceRate = totalEvaluated > 0
-              ? Math.round(((presentDays + restDays + leaveDays) / totalEvaluated) * 100)
-              : 100;
-
-            const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
-            const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
-
-            // Today's Live Status for this employee
-            const todayLog = todayAttendance.find((a) => a.employeeId === emp.id);
-            const isOffToday = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
-
-            let todayStatusText = '';
-            let todayStatusClass = '';
-            if (todayLog) {
-              if (todayLog.status === 'PRESENT') {
-                todayStatusText = `حاضر اليوم في الموعد 🟢 (${todayLog.checkIn})`;
-                todayStatusClass = 'bg-emerald-100 text-emerald-900 border-emerald-300';
-              } else if (todayLog.status === 'LATE') {
-                todayStatusText = `حاضر اليوم (متأخر) 🟡 (${todayLog.checkIn})`;
-                todayStatusClass = 'bg-amber-100 text-amber-900 border-amber-300';
-              } else if (todayLog.status === 'REST_DAY') {
-                todayStatusText = `حضور في عطلة أسبوعية 🔵 (${todayLog.checkIn})`;
-                todayStatusClass = 'bg-blue-100 text-blue-900 border-blue-300';
-              } else if (todayLog.status === 'LEAVE') {
-                todayStatusText = 'في إجازة رسمية مبررة 🟣';
-                todayStatusClass = 'bg-purple-100 text-purple-900 border-purple-300';
-              } else {
-                todayStatusText = 'مسجل حضور';
-                todayStatusClass = 'bg-slate-100 text-slate-800 border-slate-300';
-              }
-            } else if (isOffToday) {
-              todayStatusText = 'في عطلة أسبوعية اليوم 🔵';
-              todayStatusClass = 'bg-blue-50 text-blue-800 border-blue-200';
-            } else {
-              todayStatusText = 'لم يسجل حضور اليوم بعد 🔴';
-              todayStatusClass = 'bg-rose-50 text-rose-800 border-rose-200';
-            }
-
-            return (
-              <div key={emp.id} className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start border-b border-purple-100 pb-3">
-                    <div>
-                      <h3 className="font-black text-purple-950 text-base">{emp.fullNameAr}</h3>
-                      <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
-                    </div>
-                    <div className="text-left bg-purple-50 px-3 py-1.5 rounded-2xl border border-purple-100">
-                      <span className="text-[10px] text-slate-400 block font-bold">نسبة الانضباط</span>
-                      <span className="text-sm font-black font-mono text-purple-950">{complianceRate}%</span>
-                    </div>
-                  </div>
-
-                  {/* Today's Live Status Badge */}
-                  <div className={`px-3 py-1.5 rounded-xl border text-xs font-black text-center flex items-center justify-center gap-1.5 ${todayStatusClass}`}>
-                    <span className="text-[10px] text-slate-500 font-normal">حالة اليوم:</span>
-                    <span>{todayStatusText}</span>
-                  </div>
-
-                  {/* Schedule details */}
-                  <div className="bg-[#FFFBF7] p-3 rounded-2xl border border-amber-200 text-xs font-bold space-y-1 text-slate-700">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">أوقات الدوام اليومي:</span>
-                      <span className="font-mono text-amber-900 font-black">{shiftStr}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">أيام العطل الأسبوعية:</span>
-                      <span className="font-black text-rose-700">{offDaysStr}</span>
-                    </div>
-                  </div>
-
-                  {/* Scorecard grid */}
-                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                      <span className="text-[10px] text-emerald-700 block">أيام الحضور في الوقت</span>
-                      <span className="text-base font-black text-emerald-800 font-mono">{presentDays} أيام 🟢</span>
-                    </div>
-
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
-                      <span className="text-[10px] text-blue-700 block">عطل رسمية معتمدة</span>
-                      <span className="text-base font-black text-blue-800 font-mono">{restDays} أيام 🔵</span>
-                    </div>
-
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
-                      <span className="text-[10px] text-amber-700 block">مرات التأخير</span>
-                      <span className="text-base font-black text-amber-900 font-mono">{lateDays} مرات 🟡</span>
-                    </div>
-
-                    <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
-                      <span className="text-[10px] text-purple-700 block">إجازات مدفوعة/مرضية</span>
-                      <span className="text-base font-black text-purple-900 font-mono">{leaveDays} أيام 🟣</span>
-                    </div>
-                  </div>
-
-                  {/* Hours Stats */}
-                  <div className="pt-2 border-t border-purple-100 flex justify-between text-xs font-black">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">إجمالي الساعات المنجزة</span>
-                      <span className="text-purple-950 font-mono">{totalWorkedHours} ساعة</span>
-                    </div>
-                    <div className="text-left">
-                      <span className="text-slate-400 block text-[10px]">ساعات العمل الإضافي</span>
-                      <span className="text-emerald-700 font-mono">+{totalOvertime} ساعة</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scorecard Action Buttons */}
-                <div className="pt-3 border-t border-purple-100 grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setSelectedEmpForSchedule(emp)}
-                    className="py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-purple-200"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    <span>تخصيص الدوام ⚙️</span>
-                  </button>
-                  <button
-                    onClick={() => setIsManualModalOpen(true)}
-                    className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-amber-600" />
-                    <span>تسجيل يدوي 📝</span>
-                  </button>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredEmployees.length === 0 ? (
+              <div className="col-span-full bg-white p-8 rounded-3xl border border-purple-100 text-center text-slate-400 font-black text-xs">
+                لا يوجد موظفون يطابقون البحث
               </div>
-            );
-          })}
+            ) : (
+              filteredEmployees.map((emp) => {
+                const summary = getEmployeeAttendanceSummary(emp);
+
+                return (
+                  <div
+                    key={emp.id}
+                    className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start border-b border-purple-100 pb-3">
+                        <div>
+                          <h3 className="font-black text-purple-950 text-base">{emp.fullNameAr}</h3>
+                          <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
+                        </div>
+                        <div className="text-left bg-purple-50 px-3 py-1.5 rounded-2xl border border-purple-100">
+                          <span className="text-[10px] text-slate-400 block font-bold">نسبة الانضباط</span>
+                          <span className="text-sm font-black font-mono text-purple-950">{summary.complianceRate}%</span>
+                        </div>
+                      </div>
+
+                      {/* Today's Live Status Badge */}
+                      <div className={`px-3 py-1.5 rounded-xl border text-xs font-black text-center flex items-center justify-center gap-1.5 ${summary.todayStatusClass}`}>
+                        <span className="text-[10px] text-slate-500 font-normal">حالة اليوم:</span>
+                        <span>{summary.todayStatusText}</span>
+                      </div>
+
+                      {/* Schedule details */}
+                      <div className="bg-[#FFFBF7] p-3 rounded-2xl border border-amber-200 text-xs font-bold space-y-1 text-slate-700">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">أوقات الدوام اليومي:</span>
+                          <span className="font-mono text-amber-900 font-black">{summary.shiftStr}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">أيام العطل الأسبوعية:</span>
+                          <span className="font-black text-rose-700">{summary.offDaysStr}</span>
+                        </div>
+                      </div>
+
+                      {/* Scorecard grid */}
+                      <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                        <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                          <span className="text-[10px] text-emerald-700 block">أيام الحضور في الوقت</span>
+                          <span className="text-base font-black text-emerald-800 font-mono">{summary.presentDays} أيام 🟢</span>
+                        </div>
+
+                        <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                          <span className="text-[10px] text-blue-700 block">عطل رسمية معتمدة</span>
+                          <span className="text-base font-black text-blue-800 font-mono">{summary.restDays} أيام 🔵</span>
+                        </div>
+
+                        <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                          <span className="text-[10px] text-amber-700 block">مرات التأخير</span>
+                          <span className="text-base font-black text-amber-900 font-mono">{summary.lateDays} مرات 🟡</span>
+                        </div>
+
+                        <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
+                          <span className="text-[10px] text-purple-700 block">إجازات مدفوعة/مرضية</span>
+                          <span className="text-base font-black text-purple-900 font-mono">{summary.leaveDays} أيام 🟣</span>
+                        </div>
+                      </div>
+
+                      {/* Hours Stats */}
+                      <div className="pt-2 border-t border-purple-100 flex justify-between text-xs font-black">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">إجمالي الساعات المنجزة</span>
+                          <span className="text-purple-950 font-mono">{summary.totalWorkedHours} ساعة</span>
+                        </div>
+                        <div className="text-left">
+                          <span className="text-slate-400 block text-[10px]">ساعات العمل الإضافي</span>
+                          <span className="text-emerald-700 font-mono">+{summary.totalOvertime} ساعة</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Scorecard Action Buttons */}
+                    <div className="pt-3 border-t border-purple-100 grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setSelectedEmpForSchedule(emp)}
+                        className="py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-purple-200"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>تخصيص الدوام ⚙️</span>
+                      </button>
+                      <button
+                        onClick={() => setIsManualModalOpen(true)}
+                        className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-amber-600" />
+                        <span>تسجيل يدوي 📝</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 
@@ -861,8 +915,7 @@ export const EmployeesView: React.FC = () => {
               </div>
             ) : (
               filteredEmployees.map((emp) => {
-                const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
-                const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
+                const summary = getEmployeeAttendanceSummary(emp);
                 const linkedUser = emp.userId
                   ? systemUsers.find((u) => u.id === emp.userId)
                   : systemUsers.find((u) =>
@@ -884,6 +937,33 @@ export const EmployeesView: React.FC = () => {
                         <span className="bg-emerald-100 text-emerald-800 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
                           نشط 🟢
                         </span>
+                      </div>
+
+                      {/* Live Today Attendance Badge & Mini Compliance Rate */}
+                      <div className={`p-2.5 rounded-2xl border text-xs font-black flex items-center justify-between ${summary.todayStatusClass}`}>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-amber-700" />
+                          <span className="text-[11px]">{summary.todayStatusText}</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/80 font-mono font-black shadow-2xs">
+                          انضباط {summary.complianceRate}%
+                        </span>
+                      </div>
+
+                      {/* Mini Attendance Metrics Bar */}
+                      <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] font-black">
+                        <div className="bg-emerald-50 text-emerald-800 p-1.5 rounded-xl border border-emerald-200/60">
+                          <span className="block text-[9px] text-emerald-600 font-bold">حضور بالموعد</span>
+                          <span className="font-mono text-xs">{summary.presentDays} يوم</span>
+                        </div>
+                        <div className="bg-amber-50 text-amber-900 p-1.5 rounded-xl border border-amber-200/60">
+                          <span className="block text-[9px] text-amber-700 font-bold">تأخيرات</span>
+                          <span className="font-mono text-xs">{summary.lateDays} مرات</span>
+                        </div>
+                        <div className="bg-purple-50 text-purple-950 p-1.5 rounded-xl border border-purple-200/60">
+                          <span className="block text-[9px] text-purple-700 font-bold">إجمالي العمل</span>
+                          <span className="font-mono text-xs">{summary.totalWorkedHours} سا</span>
+                        </div>
                       </div>
 
                       {/* System User Account Info Badge */}
@@ -932,11 +1012,11 @@ export const EmployeesView: React.FC = () => {
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-500 font-bold">أوقات العمل اليومية:</span>
-                          <span className="font-mono font-black text-amber-900">{shiftStr}</span>
+                          <span className="font-mono font-black text-amber-900">{summary.shiftStr}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-500 font-bold">العطل الأسبوعية المعتمدة:</span>
-                          <span className="font-black text-rose-700">{offDaysStr}</span>
+                          <span className="font-black text-rose-700">{summary.offDaysStr}</span>
                         </div>
                       </div>
 
@@ -954,25 +1034,34 @@ export const EmployeesView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Actions Grid (Edit, Schedule, Delete) */}
+                    {/* Actions Grid (Edit, Schedule, Manual, Delete) */}
                     <div className="pt-3 border-t border-purple-100 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           onClick={() => openEditEmployeeModal(emp)}
-                          className="py-2 bg-slate-100 hover:bg-slate-200 text-purple-950 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          className="py-2 bg-slate-100 hover:bg-slate-200 text-purple-950 font-black text-[11px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                           title="تعديل بيانات الموظف ورسالة الدخول والكلمة السرية"
                         >
-                          <Edit className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>تعديل الموظف ✏️</span>
+                          <Edit className="w-3 h-3 text-indigo-600" />
+                          <span>تعديل ✏️</span>
                         </button>
 
                         <button
                           onClick={() => setSelectedEmpForSchedule(emp)}
-                          className="py-2 bg-purple-50 hover:bg-purple-100 text-purple-950 font-black text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-purple-100"
+                          className="py-2 bg-purple-50 hover:bg-purple-100 text-purple-950 font-black text-[11px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-purple-100"
                           title="تخصيص أوقات الدوام والعطل المخصصة"
                         >
-                          <Settings className="w-3.5 h-3.5 text-amber-600" />
-                          <span>تخصيص الدوام ⚙️</span>
+                          <Settings className="w-3 h-3 text-amber-600" />
+                          <span>الدوام ⚙️</span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsManualModalOpen(true)}
+                          className="py-2 bg-amber-50 hover:bg-amber-100 text-amber-950 font-black text-[11px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-amber-200"
+                          title="تسجيل حضور يدوي أو عذر"
+                        >
+                          <Clock className="w-3 h-3 text-amber-700" />
+                          <span>حضور 📝</span>
                         </button>
                       </div>
 
