@@ -7,6 +7,8 @@ interface ManualAttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   employees: Employee[];
+  initialEmployeeId?: string;
+  initialStatus?: 'PRESENT' | 'LATE' | 'REST_DAY' | 'LEAVE' | 'ABSENT';
   onRecordSaved: () => void;
 }
 
@@ -14,15 +16,42 @@ export const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
   isOpen,
   onClose,
   employees,
+  initialEmployeeId,
+  initialStatus,
   onRecordSaved
 }) => {
-  const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || '');
-  const [date, setDate] = useState<string>(new Date().toISOString().substring(0, 10));
+  const getAlgeriaDateString = () => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Algiers',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+    } catch (e) {
+      return new Date().toISOString().substring(0, 10);
+    }
+  };
+
+  const [selectedEmpId, setSelectedEmpId] = useState<string>(initialEmployeeId || employees[0]?.id || '');
+  const [date, setDate] = useState<string>(getAlgeriaDateString());
   const [checkIn, setCheckIn] = useState<string>('08:00');
   const [checkOut, setCheckOut] = useState<string>('17:00');
-  const [status, setStatus] = useState<'PRESENT' | 'LATE' | 'REST_DAY' | 'LEAVE' | 'ABSENT'>('PRESENT');
+  const [status, setStatus] = useState<'PRESENT' | 'LATE' | 'REST_DAY' | 'LEAVE' | 'ABSENT'>(initialStatus || 'PRESENT');
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (initialEmployeeId) {
+      setSelectedEmpId(initialEmployeeId);
+    } else if (employees.length > 0 && !selectedEmpId) {
+      setSelectedEmpId(employees[0].id);
+    }
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+    setDate(getAlgeriaDateString());
+  }, [isOpen, initialEmployeeId, initialStatus, employees]);
 
   if (!isOpen) return null;
 
@@ -153,6 +182,27 @@ export const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none"
             />
+            {/* Quick Presets */}
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {[
+                'حضور نظامي بالموعد',
+                'إجازة مرضية بتقرير طبي 🏥',
+                'إجازة سنوية مدفوعة 🏖️',
+                'عذر عائلي طارئ 👨‍👩‍👧',
+                'تأخير بسبب المواصلات 🚗',
+                'نسيان تسجيل الخروج 📱',
+                'عطلة أسبوعية معتمدة 🔵'
+              ].map((template) => (
+                <button
+                  key={template}
+                  type="button"
+                  onClick={() => setNotes(template)}
+                  className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-bold rounded-lg cursor-pointer transition-colors"
+                >
+                  + {template}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Footer CTAs */}

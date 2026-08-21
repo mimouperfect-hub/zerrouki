@@ -60,6 +60,8 @@ export const EmployeesView: React.FC = () => {
 
   // Manual Attendance Modal State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualModalEmpId, setManualModalEmpId] = useState<string | undefined>(undefined);
+  const [manualModalStatus, setManualModalStatus] = useState<'PRESENT' | 'LATE' | 'REST_DAY' | 'LEAVE' | 'ABSENT' | undefined>(undefined);
 
   // Custom Delete Confirmation Modal State
   const [empToDeleteConfirm, setEmpToDeleteConfirm] = useState<Employee | null>(null);
@@ -346,11 +348,19 @@ export const EmployeesView: React.FC = () => {
     const empAtts = attendanceRecords.filter((a) => a.employeeId === emp.id);
     const presentDays = empAtts.filter((a) => a.status === 'PRESENT').length;
     const lateDays = empAtts.filter((a) => a.status === 'LATE').length;
-    const restDays = empAtts.filter((a) => a.status === 'REST_DAY').length;
+    const restDaysFromRecords = empAtts.filter((a) => a.status === 'REST_DAY').length;
     const leaveDays = empAtts.filter((a) => a.status === 'LEAVE').length;
-    const absentDays = empAtts.filter((a) => a.status === 'ABSENT').length;
+    const absentDaysFromRecords = empAtts.filter((a) => a.status === 'ABSENT').length;
     const totalWorkedHours = Number(empAtts.reduce((sum, a) => sum + (a.workingHours || 0), 0).toFixed(1));
     const totalOvertime = Number(empAtts.reduce((sum, a) => sum + (a.overtimeHours || 0), 0).toFixed(1));
+
+    // Today's Live Status for this employee
+    const todayLog = todayAttendance.find((a) => a.employeeId === emp.id);
+    const isOffToday = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
+
+    // Incorporate live today status into counts if not already logged in records
+    const restDays = isOffToday && !todayLog ? restDaysFromRecords + 1 : restDaysFromRecords;
+    const absentDays = !isOffToday && !todayLog ? absentDaysFromRecords + 1 : absentDaysFromRecords;
 
     const totalEvaluated = presentDays + lateDays + restDays + leaveDays + absentDays;
     const complianceRate = totalEvaluated > 0
@@ -359,10 +369,6 @@ export const EmployeesView: React.FC = () => {
 
     const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
     const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
-
-    // Today's Live Status for this employee
-    const todayLog = todayAttendance.find((a) => a.employeeId === emp.id);
-    const isOffToday = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
 
     let todayStatusText = '';
     let todayStatusClass = '';
@@ -436,7 +442,11 @@ export const EmployeesView: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Manual Attendance Registration Button */}
           <button
-            onClick={() => setIsManualModalOpen(true)}
+            onClick={() => {
+              setManualModalEmpId(undefined);
+              setManualModalStatus('PRESENT');
+              setIsManualModalOpen(true);
+            }}
             className="px-3.5 py-2.5 rounded-2xl bg-[#FFFBF7] border border-amber-300 text-purple-950 font-black text-xs hover:bg-amber-50 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Clock className="w-4 h-4 text-amber-600" />
@@ -756,7 +766,11 @@ export const EmployeesView: React.FC = () => {
                           </td>
                           <td className="p-3.5 text-center">
                             <button
-                              onClick={() => setIsManualModalOpen(true)}
+                              onClick={() => {
+                                setManualModalEmpId(att.employeeId);
+                                setManualModalStatus(att.status);
+                                setIsManualModalOpen(true);
+                              }}
                               className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-purple-950 rounded-xl text-[11px] font-black cursor-pointer inline-flex items-center gap-1"
                               title="تسجيل عذر أو تعديل السجل بحيادية"
                             >
@@ -879,7 +893,11 @@ export const EmployeesView: React.FC = () => {
                         <span>تخصيص الدوام ⚙️</span>
                       </button>
                       <button
-                        onClick={() => setIsManualModalOpen(true)}
+                        onClick={() => {
+                          setManualModalEmpId(emp.id);
+                          setManualModalStatus('PRESENT');
+                          setIsManualModalOpen(true);
+                        }}
                         className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200"
                       >
                         <Settings className="w-3.5 h-3.5 text-amber-600" />
@@ -1056,7 +1074,11 @@ export const EmployeesView: React.FC = () => {
                         </button>
 
                         <button
-                          onClick={() => setIsManualModalOpen(true)}
+                          onClick={() => {
+                            setManualModalEmpId(emp.id);
+                            setManualModalStatus('PRESENT');
+                            setIsManualModalOpen(true);
+                          }}
                           className="py-2 bg-amber-50 hover:bg-amber-100 text-amber-950 font-black text-[11px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-amber-200"
                           title="تسجيل حضور يدوي أو عذر"
                         >
@@ -1354,8 +1376,14 @@ export const EmployeesView: React.FC = () => {
       {/* Manager Manual Attendance & Excuse Registration Modal */}
       <ManualAttendanceModal
         isOpen={isManualModalOpen}
-        onClose={() => setIsManualModalOpen(false)}
+        onClose={() => {
+          setIsManualModalOpen(false);
+          setManualModalEmpId(undefined);
+          setManualModalStatus(undefined);
+        }}
         employees={employees}
+        initialEmployeeId={manualModalEmpId}
+        initialStatus={manualModalStatus}
         onRecordSaved={() => loadData()}
       />
 
