@@ -291,7 +291,49 @@ export const EmployeesView: React.FC = () => {
       e.positionAr.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredAttendance = attendanceRecords.filter((att) => {
+  // Generate live today entries for unlogged active employees so filtering by REST_DAY, ABSENT etc. shows them!
+  const liveTodayEntries: AttendanceRecord[] = [];
+  for (const emp of activeEmployees) {
+    const hasLogToday = todayAttendance.some((a) => a.employeeId === emp.id);
+    if (!hasLogToday) {
+      const isOffDay = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
+      if (isOffDay) {
+        liveTodayEntries.push({
+          id: 'live-off-' + emp.id,
+          employeeId: emp.id,
+          employeeNameAr: emp.fullNameAr,
+          date: todayStr,
+          checkIn: '',
+          checkOut: '',
+          workingHours: 0,
+          overtimeHours: 0,
+          status: 'REST_DAY',
+          notes: 'عطلة أسبوعية معتمدة لهذا اليوم (لم يسجل حضور)',
+          createdByUserId: 'system',
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        liveTodayEntries.push({
+          id: 'live-absent-' + emp.id,
+          employeeId: emp.id,
+          employeeNameAr: emp.fullNameAr,
+          date: todayStr,
+          checkIn: '',
+          checkOut: '',
+          workingHours: 0,
+          overtimeHours: 0,
+          status: 'ABSENT',
+          notes: 'لم يسجل حضوراً اليوم حتى الآن',
+          createdByUserId: 'system',
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+  }
+
+  const allAttendanceViewList = [...attendanceRecords, ...liveTodayEntries];
+
+  const filteredAttendance = allAttendanceViewList.filter((att) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || att.employeeNameAr.toLowerCase().includes(q) || att.date.includes(q);
     const matchesEmp = !selectedEmpFilter || att.employeeId === selectedEmpFilter;
@@ -664,73 +706,133 @@ export const EmployeesView: React.FC = () => {
             const lateDays = empAtts.filter((a) => a.status === 'LATE').length;
             const restDays = empAtts.filter((a) => a.status === 'REST_DAY').length;
             const leaveDays = empAtts.filter((a) => a.status === 'LEAVE').length;
+            const absentDays = empAtts.filter((a) => a.status === 'ABSENT').length;
             const totalWorkedHours = empAtts.reduce((sum, a) => sum + (a.workingHours || 0), 0);
             const totalOvertime = empAtts.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
 
-            const totalLogged = empAtts.length || 1;
-            const complianceRate = Math.round(((presentDays + restDays + leaveDays) / totalLogged) * 100);
+            const totalEvaluated = presentDays + lateDays + restDays + leaveDays + absentDays;
+            const complianceRate = totalEvaluated > 0
+              ? Math.round(((presentDays + restDays + leaveDays) / totalEvaluated) * 100)
+              : 100;
 
             const shiftStr = `${emp.workStartTime || '08:00'} - ${emp.workEndTime || '17:00'}`;
             const offDaysStr = emp.offDays && emp.offDays.length > 0 ? emp.offDays.join('، ') : (emp.restDayAr || 'الجمعة');
 
+            // Today's Live Status for this employee
+            const todayLog = todayAttendance.find((a) => a.employeeId === emp.id);
+            const isOffToday = (emp.offDays && emp.offDays.includes(todayDayName)) || emp.restDayAr === todayDayName;
+
+            let todayStatusText = '';
+            let todayStatusClass = '';
+            if (todayLog) {
+              if (todayLog.status === 'PRESENT') {
+                todayStatusText = `حاضر اليوم في الموعد 🟢 (${todayLog.checkIn})`;
+                todayStatusClass = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+              } else if (todayLog.status === 'LATE') {
+                todayStatusText = `حاضر اليوم (متأخر) 🟡 (${todayLog.checkIn})`;
+                todayStatusClass = 'bg-amber-100 text-amber-900 border-amber-300';
+              } else if (todayLog.status === 'REST_DAY') {
+                todayStatusText = `حضور في عطلة أسبوعية 🔵 (${todayLog.checkIn})`;
+                todayStatusClass = 'bg-blue-100 text-blue-900 border-blue-300';
+              } else if (todayLog.status === 'LEAVE') {
+                todayStatusText = 'في إجازة رسمية مبررة 🟣';
+                todayStatusClass = 'bg-purple-100 text-purple-900 border-purple-300';
+              } else {
+                todayStatusText = 'مسجل حضور';
+                todayStatusClass = 'bg-slate-100 text-slate-800 border-slate-300';
+              }
+            } else if (isOffToday) {
+              todayStatusText = 'في عطلة أسبوعية اليوم 🔵';
+              todayStatusClass = 'bg-blue-50 text-blue-800 border-blue-200';
+            } else {
+              todayStatusText = 'لم يسجل حضور اليوم بعد 🔴';
+              todayStatusClass = 'bg-rose-50 text-rose-800 border-rose-200';
+            }
+
             return (
-              <div key={emp.id} className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all">
-                <div className="flex justify-between items-start border-b border-purple-100 pb-3">
-                  <div>
-                    <h3 className="font-black text-purple-950 text-base">{emp.fullNameAr}</h3>
-                    <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
+              <div key={emp.id} className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start border-b border-purple-100 pb-3">
+                    <div>
+                      <h3 className="font-black text-purple-950 text-base">{emp.fullNameAr}</h3>
+                      <p className="text-xs text-rose-600 font-extrabold mt-0.5">{emp.positionAr}</p>
+                    </div>
+                    <div className="text-left bg-purple-50 px-3 py-1.5 rounded-2xl border border-purple-100">
+                      <span className="text-[10px] text-slate-400 block font-bold">نسبة الانضباط</span>
+                      <span className="text-sm font-black font-mono text-purple-950">{complianceRate}%</span>
+                    </div>
                   </div>
-                  <div className="text-left bg-purple-50 px-3 py-1.5 rounded-2xl border border-purple-100">
-                    <span className="text-[10px] text-slate-400 block font-bold">نسبة الانضباط</span>
-                    <span className="text-sm font-black font-mono text-purple-950">{complianceRate}%</span>
+
+                  {/* Today's Live Status Badge */}
+                  <div className={`px-3 py-1.5 rounded-xl border text-xs font-black text-center flex items-center justify-center gap-1.5 ${todayStatusClass}`}>
+                    <span className="text-[10px] text-slate-500 font-normal">حالة اليوم:</span>
+                    <span>{todayStatusText}</span>
+                  </div>
+
+                  {/* Schedule details */}
+                  <div className="bg-[#FFFBF7] p-3 rounded-2xl border border-amber-200 text-xs font-bold space-y-1 text-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">أوقات الدوام اليومي:</span>
+                      <span className="font-mono text-amber-900 font-black">{shiftStr}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">أيام العطل الأسبوعية:</span>
+                      <span className="font-black text-rose-700">{offDaysStr}</span>
+                    </div>
+                  </div>
+
+                  {/* Scorecard grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                      <span className="text-[10px] text-emerald-700 block">أيام الحضور في الوقت</span>
+                      <span className="text-base font-black text-emerald-800 font-mono">{presentDays} أيام 🟢</span>
+                    </div>
+
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                      <span className="text-[10px] text-blue-700 block">عطل رسمية معتمدة</span>
+                      <span className="text-base font-black text-blue-800 font-mono">{restDays} أيام 🔵</span>
+                    </div>
+
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                      <span className="text-[10px] text-amber-700 block">مرات التأخير</span>
+                      <span className="text-base font-black text-amber-900 font-mono">{lateDays} مرات 🟡</span>
+                    </div>
+
+                    <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
+                      <span className="text-[10px] text-purple-700 block">إجازات مدفوعة/مرضية</span>
+                      <span className="text-base font-black text-purple-900 font-mono">{leaveDays} أيام 🟣</span>
+                    </div>
+                  </div>
+
+                  {/* Hours Stats */}
+                  <div className="pt-2 border-t border-purple-100 flex justify-between text-xs font-black">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">إجمالي الساعات المنجزة</span>
+                      <span className="text-purple-950 font-mono">{totalWorkedHours} ساعة</span>
+                    </div>
+                    <div className="text-left">
+                      <span className="text-slate-400 block text-[10px]">ساعات العمل الإضافي</span>
+                      <span className="text-emerald-700 font-mono">+{totalOvertime} ساعة</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Schedule details */}
-                <div className="bg-[#FFFBF7] p-3 rounded-2xl border border-amber-200 text-xs font-bold space-y-1 text-slate-700">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">أوقات الدوام اليومي:</span>
-                    <span className="font-mono text-amber-900 font-black">{shiftStr}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">أيام العطل الأسبوعية:</span>
-                    <span className="font-black text-rose-700">{offDaysStr}</span>
-                  </div>
-                </div>
-
-                {/* Scorecard grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <span className="text-[10px] text-emerald-700 block">أيام الحضور في الوقت</span>
-                    <span className="text-base font-black text-emerald-800 font-mono">{presentDays} أيام 🟢</span>
-                  </div>
-
-                  <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
-                    <span className="text-[10px] text-blue-700 block">عطل رسمية معتمدة</span>
-                    <span className="text-base font-black text-blue-800 font-mono">{restDays} أيام 🔵</span>
-                  </div>
-
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
-                    <span className="text-[10px] text-amber-700 block">مرات التأخير</span>
-                    <span className="text-base font-black text-amber-900 font-mono">{lateDays} مرات 🟡</span>
-                  </div>
-
-                  <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
-                    <span className="text-[10px] text-purple-700 block">إجازات مدفوعة/مرضية</span>
-                    <span className="text-base font-black text-purple-900 font-mono">{leaveDays} أيام 🟣</span>
-                  </div>
-                </div>
-
-                {/* Hours Stats */}
-                <div className="pt-2 border-t border-purple-100 flex justify-between text-xs font-black">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">إجمالي الساعات المنجزة</span>
-                    <span className="text-purple-950 font-mono">{totalWorkedHours} ساعة</span>
-                  </div>
-                  <div className="text-left">
-                    <span className="text-slate-400 block text-[10px]">ساعات العمل الإضافي</span>
-                    <span className="text-emerald-700 font-mono">+{totalOvertime} ساعة</span>
-                  </div>
+                {/* Scorecard Action Buttons */}
+                <div className="pt-3 border-t border-purple-100 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSelectedEmpForSchedule(emp)}
+                    className="py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-purple-200"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>تخصيص الدوام ⚙️</span>
+                  </button>
+                  <button
+                    onClick={() => setIsManualModalOpen(true)}
+                    className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-amber-600" />
+                    <span>تسجيل يدوي 📝</span>
+                  </button>
                 </div>
               </div>
             );
