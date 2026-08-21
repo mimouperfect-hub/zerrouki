@@ -63,9 +63,19 @@ export const EmployeesView: React.FC = () => {
       loadData();
     };
 
+    const handleSettingsUpdated = (e: any) => {
+      if (e.detail?.storeNameAr) {
+        setStoreName(e.detail.storeNameAr);
+      } else {
+        loadData();
+      }
+    };
+
     window.addEventListener('zerrouki_attendance_updated', handleAttendanceUpdated);
+    window.addEventListener('zerrouki_settings_updated', handleSettingsUpdated);
     return () => {
       window.removeEventListener('zerrouki_attendance_updated', handleAttendanceUpdated);
+      window.removeEventListener('zerrouki_settings_updated', handleSettingsUpdated);
     };
   }, []);
 

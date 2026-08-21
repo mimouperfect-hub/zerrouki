@@ -134,14 +134,15 @@ export const ManagerAttendanceQRModal: React.FC<ManagerAttendanceQRModalProps> =
                   جاري توليد رمز QR قياسي...
                 </div>
               )}
-              <div className="mt-3 font-mono font-black text-xs text-purple-950 bg-slate-100 px-3 py-1 rounded-lg">
-                رمز الحساب: {qrToken}
+              <div className="mt-3 text-[11px] font-black text-purple-900 bg-purple-50 px-3.5 py-1.5 rounded-full border border-purple-200 inline-flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>رمز توثيق ذكي معتمد رسمياً للفرع</span>
               </div>
             </div>
 
             {/* Verification Footer */}
             <div className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-bold space-y-1 w-full">
-              <div>صادر عن إدارة المدير العام - مؤسسة زروقي للحلويات</div>
+              <div>صادر عن إدارة المدير العام - {storeName || 'مؤسسة زروقي للحلويات'}</div>
               <div className="font-mono text-[10px] text-purple-900">تاريخ التحديث: {new Date().toLocaleDateString('ar-DZ')}</div>
             </div>
           </div>
