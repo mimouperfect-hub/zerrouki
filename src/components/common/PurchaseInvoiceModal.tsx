@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer, X, Truck, Calendar, DollarSign, Check, Phone, MapPin, Barcode, ShieldAlert, Sparkles, Building2, Tag } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
-import { Purchase, Supplier, Product } from '../../types';
+import { Purchase, Supplier, Product, SystemSettings } from '../../types';
+import { api } from '../../api/client';
 
 interface PurchaseInvoiceModalProps {
   purchase: Purchase;
@@ -11,6 +12,12 @@ interface PurchaseInvoiceModalProps {
 }
 
 export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({ purchase, supplier, products, onClose }) => {
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).catch(console.error);
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
@@ -108,11 +115,11 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({ purc
                   <BrandLogo size="lg" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-purple-950">مؤسسة زروقي للحلويات - قسم استلام التوريدات</h1>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">Zerrouki Sweets Purchase & Warehouse Receiving Record</p>
+                  <h1 className="text-xl font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'} - قسم استلام التوريدات</h1>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{settings?.storeNameFr || 'Zerrouki Sweets'} Purchase & Warehouse Receiving Record</p>
                   <div className="text-[11px] text-slate-600 mt-2 space-y-0.5 font-bold">
-                    <div>المقر الرئيسي والمستودع: شارع فلسطين، المركز التجاري، الجزائر العاصمة</div>
-                    <div>مصلحة التموين والمستودع: <span className="font-mono text-purple-900 font-black">0550 12 34 56</span></div>
+                    <div>المقر الرئيسي والمستودع: {settings?.addressAr || 'شارع فلسطين، المركز التجاري، الجزائر العاصمة'}</div>
+                    <div>مصلحة التموين والمستودع: <span className="font-mono text-purple-900 font-black">{settings?.phone || '0550 12 34 56'}</span></div>
                   </div>
                 </div>
               </div>

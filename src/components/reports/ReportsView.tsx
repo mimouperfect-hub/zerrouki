@@ -10,15 +10,18 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { api } from '../../api/client';
+import { SystemSettings } from '../../types';
 
 export const ReportsView: React.FC = () => {
   const [data, setData] = useState<any>(null);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'STATEMENT' | 'PRODUCT_PROFIT' | 'STOCK_VALUATION' | 'STAFF_CATEGORY'>('STATEMENT');
   const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
     loadReports();
+    api.getSettings().then(setSettings).catch(console.error);
   }, []);
 
   const loadReports = async () => {
@@ -42,7 +45,7 @@ export const ReportsView: React.FC = () => {
 
     // Sheet 1: Financial Income Statement
     const statementSheet = [
-      ['مؤسسة زروقي للحلويات - كشف قائمة الدخل والأرباح الصافية'],
+      [`${settings?.storeNameAr || 'مؤسسة زروقي للحلويات'} - كشف قائمة الدخل والأرباح الصافية`],
       ['تاريخ الإصدار:', new Date().toLocaleDateString('ar-DZ')],
       [],
       ['البند المالي', 'القيمة بالدينار الجزائري (DZD)'],

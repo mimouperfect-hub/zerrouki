@@ -1,12 +1,13 @@
 import React from 'react';
 import { Bell, Menu, LogOut, User as UserIcon, Camera } from 'lucide-react';
-import { ActiveView, User } from '../../types';
+import { ActiveView, User, SystemSettings } from '../../types';
 
 interface HeaderProps {
   activeView: ActiveView;
   onNavigate: (view: ActiveView) => void;
   onToggleSidebar: () => void;
   currentUser?: User | null;
+  settings?: SystemSettings | null;
   onLogout?: () => void;
   onOpenScanAttendance?: () => void;
 }
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onToggleSidebar,
   currentUser,
+  settings,
   onLogout,
   onOpenScanAttendance
 }) => {
@@ -33,7 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <h2 className="text-sm md:text-base font-black text-purple-950 hidden sm:block">
-          ✨ محل زروقي للحلويات - <span className="text-rose-600 font-extrabold">Zerrouki Sweets</span>
+          ✨ {settings?.storeNameAr || 'مؤسسة زروقي للحلويات'} {settings?.storeNameFr ? '- ' : ''}
+          <span className="text-rose-600 font-extrabold">{settings?.storeNameFr || 'Zerrouki Sweets'}</span>
         </h2>
       </div>
 

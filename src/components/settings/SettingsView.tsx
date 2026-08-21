@@ -83,8 +83,9 @@ export const SettingsView: React.FC = () => {
     try {
       setSettingsSaving(true);
       await api.updateSettings(settings);
-      setSettingsSuccessMsg('تم حفظ إعدادات المحل والنظام بنجاح!');
-      setTimeout(() => setSettingsSuccessMsg(null), 3000);
+      window.dispatchEvent(new CustomEvent('zerrouki_settings_updated', { detail: settings }));
+      setSettingsSuccessMsg('تم حفظ إعدادات المحل والنظام بنجاح! تم تطبيق اسم وشعار المحل الجديد فورياً.');
+      setTimeout(() => setSettingsSuccessMsg(null), 4000);
     } catch (err: any) {
       alert(err.message || 'فشل حفظ الإعدادات');
     } finally {

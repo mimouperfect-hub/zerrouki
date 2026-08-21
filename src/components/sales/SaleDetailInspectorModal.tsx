@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, Printer, Clock, UserCheck, ShieldCheck, FileText, DollarSign,
   Package, Calendar, CheckCircle2, Lock, Tag, Layers, CreditCard
 } from 'lucide-react';
-import { Sale } from '../../types';
+import { Sale, SystemSettings } from '../../types';
 import { BrandLogo } from '../common/BrandLogo';
+import { api } from '../../api/client';
 
 interface SaleDetailInspectorModalProps {
   sale: Sale;
@@ -12,6 +13,12 @@ interface SaleDetailInspectorModalProps {
 }
 
 export const SaleDetailInspectorModal: React.FC<SaleDetailInspectorModalProps> = ({ sale, onClose }) => {
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).catch(console.error);
+  }, []);
+
   const handlePrintA4 = () => {
     window.print();
   };
@@ -117,11 +124,11 @@ export const SaleDetailInspectorModal: React.FC<SaleDetailInspectorModalProps> =
                   <BrandLogo size="lg" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-purple-950">مؤسسة زروقي للحلويات - سجل تدقيق الفواتير</h1>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">Zerrouki Sweets Sales & Worker Accountability Ledger</p>
+                  <h1 className="text-xl font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'} - سجل تدقيق الفواتير</h1>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{settings?.storeNameFr || 'Zerrouki Sweets'} Sales & Worker Accountability Ledger</p>
                   <div className="text-[11px] text-slate-600 mt-2 space-y-0.5 font-bold">
-                    <div>شارع فلسطين، المركز التجاري، الجزائر العاصمة</div>
-                    <div>هاتف الإدارة العامة: <span className="font-mono text-purple-900 font-black">0550 12 34 56</span></div>
+                    <div>{settings?.addressAr || 'شارع فلسطين، المركز التجاري، الجزائر العاصمة'}</div>
+                    <div>هاتف الإدارة العامة: <span className="font-mono text-purple-900 font-black">{settings?.phone || '0550 12 34 56'}</span></div>
                   </div>
                 </div>
               </div>

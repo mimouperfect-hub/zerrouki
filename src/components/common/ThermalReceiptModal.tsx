@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer, X, Check, FileText, Phone, MapPin, Barcode, ShieldCheck, Award, FileSpreadsheet } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { api } from '../../api/client';
+import { SystemSettings } from '../../types';
 
 interface ThermalReceiptModalProps {
   sale: {
@@ -29,6 +31,11 @@ interface ThermalReceiptModalProps {
 
 export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, onClose }) => {
   const [invoiceType, setInvoiceType] = useState<'80MM' | 'A4'>('80MM');
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).catch(console.error);
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -145,17 +152,17 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, 
                     <BrandLogo size="md" />
                   </div>
                 </div>
-                <h2 className="text-base font-black text-purple-950">محلات زروقي للحلويات</h2>
-                <p className="text-[11px] font-bold text-slate-600">Zerrouki Sweets & Confectionery</p>
+                <h2 className="text-base font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'}</h2>
+                <p className="text-[11px] font-bold text-slate-600">{settings?.storeNameFr || 'Zerrouki Sweets & Confectionery'}</p>
                 
                 <div className="text-[10px] text-gray-500 font-medium space-y-0.5 pt-1">
                   <div className="flex items-center justify-center gap-1">
                     <MapPin className="w-3 h-3 text-amber-500" />
-                    <span>شارع فلسطين، المركز التجاري، الجزائر</span>
+                    <span>{settings?.addressAr || 'شارع فلسطين، المركز التجاري، الجزائر'}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <Phone className="w-3 h-3 text-amber-500" />
-                    <span className="font-mono dir-ltr">0550 12 34 56</span>
+                    <span className="font-mono dir-ltr">{settings?.phone || '0550 12 34 56'}</span>
                   </div>
                 </div>
               </div>
@@ -269,11 +276,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, 
                     <BrandLogo size="lg" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-black text-purple-950">مؤسسة زروقي للحلويات والمستلزمات</h1>
-                    <p className="text-xs text-gray-500 font-bold mt-0.5">Zerrouki Sweets & Pastry Materials</p>
+                    <h1 className="text-xl font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات والمستلزمات'}</h1>
+                    <p className="text-xs text-gray-500 font-bold mt-0.5">{settings?.storeNameFr || 'Zerrouki Sweets & Pastry Materials'}</p>
                     <div className="text-[11px] text-gray-600 mt-2 space-y-0.5 font-medium">
-                      <div>المقر الاجتماعي: شارع فلسطين، المركز التجاري، الجزائر العاصمة</div>
-                      <div>الهاتف: <span className="font-mono">0550 12 34 56</span> • NIF: <span className="font-mono">001234567890123</span></div>
+                      <div>المقر الاجتماعي: {settings?.addressAr || 'شارع فلسطين، المركز التجاري، الجزائر العاصمة'}</div>
+                      <div>الهاتف: <span className="font-mono">{settings?.phone || '0550 12 34 56'}</span> • NIF: <span className="font-mono">001234567890123</span></div>
                     </div>
                   </div>
                 </div>

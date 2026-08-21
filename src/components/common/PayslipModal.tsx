@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer, X, Award, DollarSign, Calendar, UserCheck, ShieldCheck, Check, Phone, MapPin, Clock } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { api } from '../../api/client';
+import { SystemSettings } from '../../types';
 
 interface PayslipModalProps {
   payItem: {
@@ -30,6 +32,12 @@ interface PayslipModalProps {
 }
 
 export const PayslipModal: React.FC<PayslipModalProps> = ({ payItem, periodNameAr, onClose }) => {
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).catch(console.error);
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
@@ -123,11 +131,11 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({ payItem, periodNameA
                   <BrandLogo size="lg" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-purple-950">مؤسسة زروقي للحلويات - كشف الأجر والرواتب</h1>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">Zerrouki Sweets Official Payroll Voucher</p>
+                  <h1 className="text-xl font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'} - كشف الأجر والرواتب</h1>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{settings?.storeNameFr || 'Zerrouki Sweets'} Official Payroll Voucher</p>
                   <div className="text-[11px] text-slate-600 mt-2 space-y-0.5 font-bold">
-                    <div>المقر الرئيسي: شارع فلسطين، المركز التجاري، الجزائر العاصمة</div>
-                    <div>مصلحة الموارد البشرية والأجور: <span className="font-mono text-purple-900 font-black">0550 12 34 56</span></div>
+                    <div>المقر الرئيسي: {settings?.addressAr || 'شارع فلسطين، المركز التجاري، الجزائر العاصمة'}</div>
+                    <div>مصلحة الموارد البشرية والأجور: <span className="font-mono text-purple-900 font-black">{settings?.phone || '0550 12 34 56'}</span></div>
                   </div>
                 </div>
               </div>

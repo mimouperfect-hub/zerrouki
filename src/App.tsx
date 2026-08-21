@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { LoginView } from './components/auth/LoginView';
-import { ActiveView, User } from './types';
+import { ActiveView, User, SystemSettings } from './types';
+import { api } from './api/client';
 import { ScanAttendanceModal } from './components/employees/ScanAttendanceModal';
 
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -24,10 +25,27 @@ import { SettingsView } from './components/settings/SettingsView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [activeView, setActiveView] = useState<ActiveView>('DASHBOARD');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScanAttendanceOpen, setIsScanAttendanceOpen] = useState(false);
   const mainContentRef = React.useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Load store settings
+    api.getSettings().then(setSettings).catch(console.error);
+
+    const handleSettingsUpdated = (e: any) => {
+      if (e.detail) {
+        setSettings(e.detail);
+      } else {
+        api.getSettings().then(setSettings).catch(console.error);
+      }
+    };
+
+    window.addEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+  }, []);
 
   // Automatically scroll to the top of the page when navigating between views
   useEffect(() => {
@@ -238,6 +256,7 @@ export default function App() {
         onNavigate={(view) => navigateTo(view)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         currentUser={currentUser}
+        settings={settings}
         onLogout={handleLogout}
         onOpenScanAttendance={() => setIsScanAttendanceOpen(true)}
       />
