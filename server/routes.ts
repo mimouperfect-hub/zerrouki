@@ -1939,15 +1939,20 @@ apiRouter.get('/attendance/manager-qr', (req: Request, res: Response) => {
 
 apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
   const currentUser = (req as any).user;
-  const { qrToken, employeeId: paramEmpId } = req.body;
+  let { qrToken, employeeId: paramEmpId } = req.body;
 
   const settings = db.get('settings');
   const branchCode = (settings as any).branchCode || 'BR1';
   const storeToken = `ZERROUKI_ATTENDANCE_${branchCode}_2026`;
 
-  // Validate QR token
-  if (qrToken && !qrToken.includes('ZERROUKI_ATTENDANCE') && qrToken !== storeToken) {
-    return res.status(400).json({ error: 'رمز QR غير صالح أو منتهي الصلاحية' });
+  // Clean QR token prefix if present
+  if (typeof qrToken === 'string' && qrToken.startsWith('ZERROUKI-ATTENDANCE-POINT:')) {
+    qrToken = qrToken.replace('ZERROUKI-ATTENDANCE-POINT:', '').trim();
+  }
+
+  // Strictly enforce that a valid QR token was scanned
+  if (!qrToken || typeof qrToken !== 'string' || (!qrToken.includes('ZERROUKI_ATTENDANCE') && !qrToken.includes('ZERROUKI') && qrToken !== storeToken)) {
+    return res.status(400).json({ error: 'يجب مسح رمز QR المعتمد لتسجيل الحضور أو الانصراف. لا يمكن تأكيد الحضور بدون مسح الرمز الفعلي بالكاميرا.' });
   }
 
   const employees = db.get('employees');
@@ -2016,7 +2021,9 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
       employeeName: emp.fullNameAr,
       status: todayRecord.status,
       checkIn: currentTime,
-      message: `تم تسجيل حضور الموظف ${emp.fullNameAr} بنجاح الساعة ${currentTime}`
+      message: status === 'LATE'
+        ? `⚠️ تم تسجيل حضورك (متأخر) بنجاح الساعة ${currentTime}`
+        : `✅ تم تسجيل حضورك الصباحي بنجاح الساعة ${currentTime}`
     });
   } else {
     // CHECK OUT
@@ -2059,13 +2066,17 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
       checkOut: currentTime,
       workingHours: workedHours,
       overtimeHours,
-      message: `تم تسجيل انصراف الموظف ${emp.fullNameAr} الساعة ${currentTime} (إجمالي الساعات: ${workedHours} سا)`
+      message: `👋 تم تسجيل انصرافك المسائي بنجاح الساعة ${currentTime} (${workedHours} ساعة عمل)`
     });
   }
 });
 
 apiRouter.post('/attendance/manual', (req: Request, res: Response) => {
   const currentUser = (req as any).user;
+  if (currentUser.roleCode !== 'OWNER' && currentUser.roleCode !== 'MANAGER') {
+    return res.status(403).json({ error: 'عذراً، التسجيل اليدوي للحضور محصور حصرياً بالمدير العام' });
+  }
+
   const { employeeId, date, checkIn, checkOut, status, notes } = req.body;
 
   const employees = db.get('employees');
@@ -2083,11 +2094,11 @@ apiRouter.post('/attendance/manual', (req: Request, res: Response) => {
   }
 
   if (record) {
-    record.checkIn = checkIn;
-    record.checkOut = checkOut;
-    record.status = status || record.status;
-    record.workingHours = workedHours;
-    record.notes = notes;
+    if (checkIn) record.checkIn = checkIn;
+    if (checkOut) record.checkOut = checkOut;
+    if (status) record.status = status;
+    if (notes) record.notes = notes;
+    if (workedHours > 0) record.workingHours = workedHours;
   } else {
     record = {
       id: 'att-' + Date.now(),
@@ -2647,244 +2658,7 @@ apiRouter.post('/suppliers/:id/pay-debt', (req: Request, res: Response) => {
   res.json({ message: 'تم تسجيل تسديد المستحقات بنجاح', supplier });
 });
 
-// ===============================================
-// ATTENDANCE & LEAVES
-// ===============================================
-apiRouter.get('/attendance', (req: Request, res: Response) => {
-  res.json(db.get('attendanceRecords'));
-});
 
-apiRouter.get('/attendance/manager-qr', (req: Request, res: Response) => {
-  const settings = db.get('settings');
-  res.json({
-    qrToken: 'ZERROUKI_ATTENDANCE_MAIN_STORE_2026',
-    qrPayload: 'ZERROUKI_ATTENDANCE_MAIN_STORE_2026',
-    storeName: settings?.storeNameAr || 'مؤسسة زروقي للحلويات'
-  });
-});
-
-apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  const { qrToken } = req.body;
-
-  if (qrToken && qrToken !== 'ZERROUKI_ATTENDANCE_MAIN_STORE_2026' && !qrToken.includes('ZERROUKI')) {
-    return res.status(400).json({ error: 'رمز QR المسوح غير صالح لحضور المحل' });
-  }
-
-  const employees = db.get('employees');
-  let emp = employees.find(e =>
-    (currentUser.id && e.userId === currentUser.id) ||
-    (currentUser.name && e.fullNameAr.toLowerCase().includes(currentUser.name.toLowerCase())) ||
-    (currentUser.username && e.fullNameAr.toLowerCase().includes(currentUser.username.toLowerCase()))
-  );
-
-  if (!emp) {
-    emp = {
-      id: 'emp-user-' + currentUser.id,
-      fullNameAr: currentUser.name || currentUser.username || 'موظف في النظام',
-      phone: currentUser.phone || '0550000000',
-      positionAr: currentUser.roleCode === 'CASHIER' ? 'بائع' : currentUser.roleCode === 'STOREKEEPER' ? 'مسؤول المخزن' : 'موظف في النظام',
-      branchId: currentUser.branchId || 'br-1',
-      startDate: new Date().toISOString().substring(0, 10),
-      contractType: 'FULL_TIME',
-      salaryType: 'MONTHLY',
-      baseSalary: 35000,
-      dailyRate: 1400,
-      workingHoursPerDay: 8,
-      workingDaysPerMonth: 26,
-      restDayAr: 'الجمعة',
-      workStartTime: '08:00',
-      workEndTime: '17:00',
-      offDays: ['الجمعة'],
-      lateToleranceMinutes: 15,
-      isActive: true,
-      userId: currentUser.id,
-      createdAt: new Date().toISOString()
-    };
-    employees.unshift(emp);
-    db.save();
-  }
-
-  const todayStr = new Date().toISOString().substring(0, 10);
-  const nowTime = new Date().toTimeString().substring(0, 5);
-  const attendance = db.get('attendanceRecords');
-
-  let rec = attendance.find(a => a.employeeId === emp!.id && a.date === todayStr);
-
-  // 1. Morning Check-In (تسجيل الحضور صباحاً)
-  if (!rec) {
-    let status: 'PRESENT' | 'LATE' | 'LEAVE' | 'ABSENT' | 'REST_DAY' = 'PRESENT';
-    if (emp.workStartTime) {
-      const [startH, startM] = emp.workStartTime.split(':').map(Number);
-      const [nowH, nowM] = nowTime.split(':').map(Number);
-      const startTotal = startH * 60 + startM + (emp.lateToleranceMinutes || 15);
-      const nowTotal = nowH * 60 + nowM;
-      if (nowTotal > startTotal) {
-        status = 'LATE';
-      }
-    }
-
-    rec = {
-      id: 'att-' + Date.now(),
-      employeeId: emp.id,
-      employeeNameAr: emp.fullNameAr,
-      date: todayStr,
-      checkIn: nowTime,
-      status,
-      workingHours: emp.workingHoursPerDay || 8,
-      overtimeHours: 0,
-      createdByUserId: currentUser.id,
-      createdAt: new Date().toISOString()
-    };
-
-    attendance.unshift(rec);
-    db.save();
-    db.logAudit(currentUser.id, currentUser.name, 'CHECK_IN_QR', 'ATTENDANCE', `تسجيل حضور الموظف ${emp.fullNameAr} بواسطة رمز QR`, rec.id);
-
-    return res.json({
-      action: 'CHECK_IN',
-      status: rec.status,
-      employeeName: emp.fullNameAr,
-      time: nowTime,
-      message: status === 'LATE'
-        ? `⚠️ تم تسجيل حضورك (متأخر) في الساعة ${nowTime}`
-        : `✅ تم تسجيل حضورك الصباحي بنجاح في الساعة ${nowTime}`,
-      attendance: rec
-    });
-  }
-
-  // 2. Evening Check-Out (تسجيل الانصراف مساءً)
-  if (rec.checkIn && !rec.checkOut) {
-    rec.checkOut = nowTime;
-
-    const [inH, inM] = rec.checkIn.split(':').map(Number);
-    const [outH, outM] = nowTime.split(':').map(Number);
-    const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM);
-    const workedHours = Math.max(0, Math.round((totalMinutes / 60) * 10) / 10);
-    rec.workingHours = workedHours;
-
-    db.save();
-    db.logAudit(currentUser.id, currentUser.name, 'CHECK_OUT_QR', 'ATTENDANCE', `تسجيل انصراف الموظف ${emp.fullNameAr} بواسطة رمز QR`, rec.id);
-
-    return res.json({
-      action: 'CHECK_OUT',
-      status: rec.status,
-      employeeName: emp.fullNameAr,
-      time: nowTime,
-      message: `👋 تم تسجيل انصرافك المسائي بنجاح في الساعة ${nowTime} (${workedHours} ساعات عمل). نتمنى لك يوماً سعيداً!`,
-      attendance: rec
-    });
-  }
-
-  // 3. Completed Today
-  return res.json({
-    action: 'COMPLETED',
-    status: rec.status,
-    employeeName: emp.fullNameAr,
-    time: rec.checkOut || nowTime,
-    message: `✨ لقد قمت بتسجيل الحضور (الساعة ${rec.checkIn}) والانصراف (الساعة ${rec.checkOut}) لهذا اليوم بالفعل!`,
-    attendance: rec
-  });
-});
-
-apiRouter.post('/attendance/manual', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  if (currentUser.roleCode !== 'OWNER' && currentUser.roleCode !== 'MANAGER') {
-    return res.status(403).json({ error: 'عذراً، التسجيل اليدوي للحضور محصور حصرياً بالمدير العام' });
-  }
-
-  const { employeeId, date, checkIn, checkOut, status, notes } = req.body;
-
-  const employees = db.get('employees');
-  const emp = employees.find(e => e.id === employeeId);
-  if (!emp) return res.status(404).json({ error: 'الموظف غير موجود' });
-
-  const attendance = db.get('attendanceRecords');
-  let rec = attendance.find(a => a.employeeId === employeeId && a.date === date);
-
-  if (rec) {
-    if (checkIn) rec.checkIn = checkIn;
-    if (checkOut) rec.checkOut = checkOut;
-    if (status) rec.status = status;
-    if (notes) rec.notes = notes;
-  } else {
-    rec = {
-      id: 'att-' + Date.now(),
-      employeeId,
-      employeeNameAr: emp.fullNameAr,
-      date: date || new Date().toISOString().substring(0, 10),
-      checkIn: checkIn || new Date().toTimeString().substring(0, 5),
-      checkOut,
-      status: status || 'PRESENT',
-      workingHours: emp.workingHoursPerDay || 8,
-      overtimeHours: 0,
-      notes,
-      createdByUserId: currentUser.id,
-      createdAt: new Date().toISOString()
-    };
-    attendance.unshift(rec);
-  }
-
-  db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'MANUAL_ATTENDANCE', 'ATTENDANCE', `تسجيل حضور يدوي للموظف ${emp.fullNameAr}`, rec.id);
-  res.json(rec);
-});
-
-apiRouter.post('/attendance/check-in', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  const { employeeId, notes } = req.body;
-
-  const employees = db.get('employees');
-  const emp = employees.find(e => e.id === employeeId);
-  if (!emp) return res.status(404).json({ error: 'الموظف غير موجود' });
-
-  const todayStr = new Date().toISOString().substring(0, 10);
-  const attendance = db.get('attendanceRecords');
-
-  const existing = attendance.find(a => a.employeeId === employeeId && a.date === todayStr);
-  if (existing) {
-    return res.status(400).json({ error: 'تم تسجيل حضور هذا الموظف اليوم بالفعل' });
-  }
-
-  const newRec: AttendanceRecord = {
-    id: 'att-' + Date.now(),
-    employeeId,
-    employeeNameAr: emp.fullNameAr,
-    date: todayStr,
-    checkIn: new Date().toTimeString().substring(0, 5),
-    status: 'PRESENT',
-    workingHours: emp.workingHoursPerDay || 8,
-    overtimeHours: 0,
-    notes,
-    createdByUserId: currentUser.id,
-    createdAt: new Date().toISOString()
-  };
-
-  attendance.unshift(newRec);
-  db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'CHECK_IN', 'ATTENDANCE', `تسجيل حضور الموظف ${emp.fullNameAr}`, newRec.id);
-  res.json(newRec);
-});
-
-apiRouter.post('/attendance/check-out', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  const { employeeId, notes } = req.body;
-
-  const todayStr = new Date().toISOString().substring(0, 10);
-  const attendance = db.get('attendanceRecords');
-
-  const rec = attendance.find(a => a.employeeId === employeeId && a.date === todayStr);
-  if (!rec) {
-    return res.status(400).json({ error: 'لم يتم تسجيل حضور الموظف اليوم لتسجيل الانصراف' });
-  }
-
-  rec.checkOut = new Date().toTimeString().substring(0, 5);
-  if (notes) rec.notes = (rec.notes ? rec.notes + ' | ' : '') + notes;
-
-  db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'CHECK_OUT', 'ATTENDANCE', `تسجيل انصراف الموظف ${rec.employeeNameAr}`, rec.id);
-  res.json(rec);
-});
 
 apiRouter.get('/leaves', (req: Request, res: Response) => {
   res.json(db.get('leaveRequests'));
