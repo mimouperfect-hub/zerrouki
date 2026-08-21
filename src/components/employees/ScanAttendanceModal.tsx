@@ -139,6 +139,7 @@ export const ScanAttendanceModal: React.FC<ScanAttendanceModalProps> = ({
       setErrorMessage(null);
       const res = await api.scanAttendanceQR(token);
       setResultMessage(res);
+      window.dispatchEvent(new CustomEvent('zerrouki_attendance_updated'));
       onScanSuccess();
     } catch (err: any) {
       setErrorMessage(err.message || 'فشلت عملية التحقق من رمز QR للحضور');

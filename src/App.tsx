@@ -265,7 +265,7 @@ export default function App() {
         isOpen={isScanAttendanceOpen}
         onClose={() => setIsScanAttendanceOpen(false)}
         onScanSuccess={() => {
-          // Toast or refresh notification
+          window.dispatchEvent(new CustomEvent('zerrouki_attendance_updated'));
         }}
       />
     </div>

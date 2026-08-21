@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   UserCheck, Plus, Phone, Calendar, DollarSign, Award, Clock, QrCode, Camera,
-  Printer, Settings, CheckCircle2, AlertTriangle, ShieldCheck, RefreshCw, Filter, Search,
+  Printer, Settings, CheckCircle2, AlertTriangle, AlertCircle, ShieldCheck, RefreshCw, Filter, Search,
   Check, FileText, User, ChevronLeft, BarChart2, Trash2, Edit, Key, Lock, Mail, UserPlus, Shield
 } from 'lucide-react';
 import { api } from '../../api/client';
@@ -58,6 +58,15 @@ export const EmployeesView: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleAttendanceUpdated = () => {
+      loadData();
+    };
+
+    window.addEventListener('zerrouki_attendance_updated', handleAttendanceUpdated);
+    return () => {
+      window.removeEventListener('zerrouki_attendance_updated', handleAttendanceUpdated);
+    };
   }, []);
 
   const loadData = async () => {
@@ -190,12 +199,40 @@ export const EmployeesView: React.FC = () => {
   };
 
   // KPI Calculations
-  const todayStr = new Date().toISOString().substring(0, 10);
+  const now = new Date();
+  const todayStr = now.toISOString().substring(0, 10);
+  const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const todayDayName = arabicDays[now.getDay()];
+
+  const activeEmployees = employees.filter((e) => e.isActive !== false);
   const todayAttendance = attendanceRecords.filter((a) => a.date === todayStr);
+
   const presentTodayCount = todayAttendance.filter((a) => a.status === 'PRESENT').length;
   const lateTodayCount = todayAttendance.filter((a) => a.status === 'LATE').length;
-  const offTodayCount = todayAttendance.filter((a) => a.status === 'REST_DAY').length;
+  
+  // Weekly Rest Day calculation
+  const scheduledOffEmpIds = activeEmployees
+    .filter((e) => (e.offDays && e.offDays.includes(todayDayName)) || e.restDayAr === todayDayName)
+    .map((e) => e.id);
+  const recordedRestDayEmpIds = todayAttendance
+    .filter((a) => a.status === 'REST_DAY')
+    .map((a) => a.employeeId);
+  const loggedEmpIdsToday = todayAttendance.map((a) => a.employeeId);
+
+  const allOffTodayEmpIds = Array.from(new Set([
+    ...recordedRestDayEmpIds,
+    ...scheduledOffEmpIds.filter((id) => !loggedEmpIdsToday.includes(id) || recordedRestDayEmpIds.includes(id))
+  ]));
+  const offTodayCount = allOffTodayEmpIds.length;
+
   const leaveTodayCount = todayAttendance.filter((a) => a.status === 'LEAVE').length;
+
+  // Absent without excuse count
+  const recordedAbsentEmpIds = todayAttendance.filter((a) => a.status === 'ABSENT').map((a) => a.employeeId);
+  const unloggedActiveEmpIds = activeEmployees
+    .filter((e) => !loggedEmpIdsToday.includes(e.id) && !scheduledOffEmpIds.includes(e.id))
+    .map((e) => e.id);
+  const absentTodayCount = recordedAbsentEmpIds.length + unloggedActiveEmpIds.length;
 
   const filteredEmployees = employees.filter(
     (e) =>
@@ -307,59 +344,117 @@ export const EmployeesView: React.FC = () => {
       {/* TAB 1: DETAILED ATTENDANCE LEDGER */}
       {activeTab === 'ATTENDANCE' && (
         <div className="space-y-4">
-          {/* Attendance KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-xs flex items-center justify-between">
+          {/* Attendance KPI Cards - Interactive click to filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            {/* 1. Present on time */}
+            <button
+              type="button"
+              onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'PRESENT' ? 'ALL' : 'PRESENT')}
+              className={`p-4 rounded-2xl border text-right transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                selectedStatusFilter === 'PRESENT'
+                  ? 'bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500 shadow-md scale-102'
+                  : 'bg-white border-emerald-100 hover:bg-emerald-50/50'
+              }`}
+            >
               <div>
-                <span className="text-[11px] text-slate-500 font-bold">حاضرون بموعد الدوام اليوم</span>
-                <div className="text-lg font-black text-emerald-700 font-mono mt-0.5">
+                <span className="text-[11px] text-slate-500 font-bold block">حاضرون بموعد الدوام اليوم</span>
+                <div className="text-xl font-black text-emerald-700 font-mono mt-0.5">
                   {presentTodayCount} موظف
                 </div>
                 <span className="text-[10px] text-emerald-600 font-bold">التزام تـام بالوقت 🟢</span>
               </div>
-              <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl">
+              <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl shrink-0">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-            </div>
+            </button>
 
-            <div className="bg-white p-4 rounded-2xl border border-amber-100 shadow-xs flex items-center justify-between">
+            {/* 2. Late */}
+            <button
+              type="button"
+              onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'LATE' ? 'ALL' : 'LATE')}
+              className={`p-4 rounded-2xl border text-right transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                selectedStatusFilter === 'LATE'
+                  ? 'bg-amber-100 border-amber-500 ring-2 ring-amber-500 shadow-md scale-102'
+                  : 'bg-white border-amber-100 hover:bg-amber-50/50'
+              }`}
+            >
               <div>
-                <span className="text-[11px] text-slate-500 font-bold">متأخرون اليوم</span>
-                <div className="text-lg font-black text-amber-900 font-mono mt-0.5">
+                <span className="text-[11px] text-slate-500 font-bold block">متأخرون اليوم</span>
+                <div className="text-xl font-black text-amber-900 font-mono mt-0.5">
                   {lateTodayCount} موظف
                 </div>
                 <span className="text-[10px] text-amber-700 font-bold">تجاوزوا المهلة المحددة 🟡</span>
               </div>
-              <div className="p-3 bg-amber-100 text-amber-900 rounded-2xl">
+              <div className="p-3 bg-amber-100 text-amber-900 rounded-2xl shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-            </div>
+            </button>
 
-            <div className="bg-white p-4 rounded-2xl border border-blue-100 shadow-xs flex items-center justify-between">
+            {/* 3. Weekly Rest Day */}
+            <button
+              type="button"
+              onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'REST_DAY' ? 'ALL' : 'REST_DAY')}
+              className={`p-4 rounded-2xl border text-right transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                selectedStatusFilter === 'REST_DAY'
+                  ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-500 shadow-md scale-102'
+                  : 'bg-white border-blue-100 hover:bg-blue-50/50'
+              }`}
+            >
               <div>
-                <span className="text-[11px] text-slate-500 font-bold">في عطلة أسبوعية اليوم</span>
-                <div className="text-lg font-black text-blue-900 font-mono mt-0.5">
+                <span className="text-[11px] text-slate-500 font-bold block">في عطلة أسبوعية اليوم</span>
+                <div className="text-xl font-black text-blue-900 font-mono mt-0.5">
                   {offTodayCount} موظف
                 </div>
                 <span className="text-[10px] text-blue-700 font-bold">راحة رسمية معتمدة 🔵</span>
               </div>
-              <div className="p-3 bg-blue-100 text-blue-900 rounded-2xl">
+              <div className="p-3 bg-blue-100 text-blue-900 rounded-2xl shrink-0">
                 <Calendar className="w-6 h-6" />
               </div>
-            </div>
+            </button>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 shadow-xs flex items-center justify-between">
+            {/* 4. Approved Leaves */}
+            <button
+              type="button"
+              onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'LEAVE' ? 'ALL' : 'LEAVE')}
+              className={`p-4 rounded-2xl border text-right transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                selectedStatusFilter === 'LEAVE'
+                  ? 'bg-purple-100 border-purple-500 ring-2 ring-purple-500 shadow-md scale-102'
+                  : 'bg-white border-purple-100 hover:bg-purple-50/50'
+              }`}
+            >
               <div>
-                <span className="text-[11px] text-slate-500 font-bold">إجازات مبررة / مرضية</span>
-                <div className="text-lg font-black text-purple-950 font-mono mt-0.5">
+                <span className="text-[11px] text-slate-500 font-bold block">إجازات مبررة / مرضية</span>
+                <div className="text-xl font-black text-purple-950 font-mono mt-0.5">
                   {leaveTodayCount} موظف
                 </div>
                 <span className="text-[10px] text-purple-700 font-bold">إجازات موثقة 🟣</span>
               </div>
-              <div className="p-3 bg-purple-100 text-purple-900 rounded-2xl">
+              <div className="p-3 bg-purple-100 text-purple-900 rounded-2xl shrink-0">
                 <FileText className="w-6 h-6" />
               </div>
-            </div>
+            </button>
+
+            {/* 5. Absent */}
+            <button
+              type="button"
+              onClick={() => setSelectedStatusFilter(selectedStatusFilter === 'ABSENT' ? 'ALL' : 'ABSENT')}
+              className={`p-4 rounded-2xl border text-right transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                selectedStatusFilter === 'ABSENT'
+                  ? 'bg-rose-100 border-rose-500 ring-2 ring-rose-500 shadow-md scale-102'
+                  : 'bg-white border-rose-100 hover:bg-rose-50/50'
+              }`}
+            >
+              <div>
+                <span className="text-[11px] text-slate-500 font-bold block">غائبون بدون مبرر اليوم</span>
+                <div className="text-xl font-black text-rose-700 font-mono mt-0.5">
+                  {absentTodayCount} موظف
+                </div>
+                <span className="text-[10px] text-rose-600 font-bold">لم يسجلوا حضوراً 🔴</span>
+              </div>
+              <div className="p-3 bg-rose-100 text-rose-700 rounded-2xl shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </button>
           </div>
 
           {/* Filters Bar */}

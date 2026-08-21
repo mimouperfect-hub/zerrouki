@@ -43,6 +43,7 @@ export const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         status,
         notes: notes.trim()
       });
+      window.dispatchEvent(new CustomEvent('zerrouki_attendance_updated'));
       onRecordSaved();
       onClose();
     } catch (err: any) {
