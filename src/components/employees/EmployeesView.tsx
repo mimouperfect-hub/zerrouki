@@ -27,6 +27,19 @@ export const EmployeesView: React.FC = () => {
   const [positionAr, setPositionAr] = useState('');
   const [baseSalary, setBaseSalary] = useState(40000);
   const [commissionRatePercent, setCommissionRatePercent] = useState(0);
+  const [offDays, setOffDays] = useState<string[]>(['الجمعة']);
+  const [workStartTime, setWorkStartTime] = useState<string>('08:00');
+  const [workEndTime, setWorkEndTime] = useState<string>('17:00');
+  const [lateToleranceMinutes, setLateToleranceMinutes] = useState<number>(15);
+
+  const DAYS_OF_WEEK = ['الجمعة', 'السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+
+  const toggleOffDay = (day: string) => {
+    setOffDays((prev) => {
+      const updated = prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day];
+      return updated.length > 0 ? updated : [day];
+    });
+  };
 
   // System User Login Credentials for Employee
   const [createAccount, setCreateAccount] = useState(false);
@@ -107,6 +120,10 @@ export const EmployeesView: React.FC = () => {
     setPositionAr('');
     setBaseSalary(40000);
     setCommissionRatePercent(0);
+    setOffDays(['الجمعة']);
+    setWorkStartTime('08:00');
+    setWorkEndTime('17:00');
+    setLateToleranceMinutes(15);
     setCreateAccount(true);
     setUsername('');
     setPassword('');
@@ -121,6 +138,10 @@ export const EmployeesView: React.FC = () => {
     setPositionAr(emp.positionAr || '');
     setBaseSalary(emp.baseSalary || 40000);
     setCommissionRatePercent(emp.commissionRatePercent || 0);
+    setOffDays(emp.offDays && emp.offDays.length > 0 ? emp.offDays : (emp.restDayAr ? [emp.restDayAr] : ['الجمعة']));
+    setWorkStartTime(emp.workStartTime || '08:00');
+    setWorkEndTime(emp.workEndTime || '17:00');
+    setLateToleranceMinutes(emp.lateToleranceMinutes || 15);
 
     const linkedUser = emp.userId ? systemUsers.find((u) => u.id === emp.userId) : null;
     if (linkedUser) {
@@ -147,6 +168,11 @@ export const EmployeesView: React.FC = () => {
           positionAr,
           baseSalary,
           commissionRatePercent,
+          offDays,
+          restDayAr: offDays.join('، '),
+          workStartTime,
+          workEndTime,
+          lateToleranceMinutes,
           createAccount,
           username,
           password,
@@ -159,10 +185,11 @@ export const EmployeesView: React.FC = () => {
           positionAr,
           baseSalary,
           commissionRatePercent,
-          workStartTime: '08:00',
-          workEndTime: '17:00',
-          offDays: ['الجمعة'],
-          lateToleranceMinutes: 15,
+          workStartTime,
+          workEndTime,
+          offDays,
+          restDayAr: offDays.join('، '),
+          lateToleranceMinutes,
           createAccount,
           username,
           password,
@@ -949,12 +976,72 @@ export const EmployeesView: React.FC = () => {
                 </div>
               </div>
 
+              {/* 2. Working Hours & Weekly Off-Days Section */}
+              <div className="space-y-3 p-4 bg-[#FFFBF7] rounded-2xl border border-amber-200">
+                <h4 className="text-xs font-black text-amber-950 flex items-center gap-1.5 border-b border-amber-200 pb-1">
+                  <Calendar className="w-4 h-4 text-amber-600" />
+                  <span>2. ساعات الدوام وأيام العطل والراحة الأسبوعية:</span>
+                </h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block mb-1 text-slate-700">وقت بدء الدوام صباحاً *</label>
+                    <input
+                      type="time"
+                      required
+                      value={workStartTime}
+                      onChange={(e) => setWorkStartTime(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-slate-700">وقت نهاية الدوام / الانصراف *</label>
+                    <input
+                      type="time"
+                      required
+                      value={workEndTime}
+                      onChange={(e) => setWorkEndTime(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl outline-none font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-700 font-black">أيام العطلة الأسبوعية (اختر أي يوم أو عدة أيام للموظف):</label>
+                    <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
+                      {offDays.length} يوم راحة
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {DAYS_OF_WEEK.map((day) => {
+                      const isSelected = offDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleOffDay(day)}
+                          className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white shadow-xs scale-105 ring-2 ring-amber-300'
+                              : 'bg-white border border-amber-200 text-slate-600 hover:bg-amber-50'
+                          }`}
+                        >
+                          <span>{day}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {/* Login Credentials Section */}
               <div className="space-y-3 p-4 bg-purple-50/60 rounded-2xl border border-purple-200">
                 <div className="flex items-center justify-between border-b border-purple-200 pb-1">
                   <h4 className="text-xs font-black text-purple-950 flex items-center gap-1.5">
                     <Key className="w-4 h-4 text-amber-600" />
-                    <span>2. بيانات حساب تسجيل الدخول بالنظام:</span>
+                    <span>3. بيانات حساب تسجيل الدخول بالنظام:</span>
                   </h4>
                   <label className="flex items-center gap-1.5 cursor-pointer text-xs font-black text-purple-900">
                     <input

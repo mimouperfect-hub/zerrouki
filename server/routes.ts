@@ -1883,10 +1883,10 @@ apiRouter.put('/employees/:id', (req: Request, res: Response) => {
     dailyRate: dailyRate !== undefined ? Number(dailyRate) : emp.dailyRate,
     hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : emp.hourlyRate,
     commissionRatePercent: commissionRatePercent !== undefined ? Number(commissionRatePercent) : emp.commissionRatePercent,
-    restDayAr: restDayAr || emp.restDayAr,
+    restDayAr: offDays && offDays.length > 0 ? (Array.isArray(offDays) ? offDays.join('، ') : offDays) : (restDayAr || emp.restDayAr),
     workStartTime: workStartTime || emp.workStartTime,
     workEndTime: workEndTime || emp.workEndTime,
-    offDays: offDays || emp.offDays,
+    offDays: offDays ? (Array.isArray(offDays) ? offDays : [offDays]) : (restDayAr ? [restDayAr] : emp.offDays),
     lateToleranceMinutes: lateToleranceMinutes !== undefined ? Number(lateToleranceMinutes) : emp.lateToleranceMinutes,
     userId: linkedUserId,
     isActive: isActive !== undefined ? isActive : emp.isActive
