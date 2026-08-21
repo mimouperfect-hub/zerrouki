@@ -1955,12 +1955,25 @@ apiRouter.put('/employees/:id/schedule', (req: Request, res: Response) => {
 
   if (workStartTime !== undefined) emp.workStartTime = workStartTime;
   if (workEndTime !== undefined) emp.workEndTime = workEndTime;
-  if (offDays !== undefined) emp.offDays = offDays;
+  if (offDays !== undefined) {
+    emp.offDays = Array.isArray(offDays) ? offDays : [offDays];
+    emp.restDayAr = emp.offDays.join('، ');
+  }
   if (lateToleranceMinutes !== undefined) emp.lateToleranceMinutes = Number(lateToleranceMinutes);
-  if (userId !== undefined) emp.userId = userId;
+  if (userId !== undefined) emp.userId = userId || undefined;
+
+  // Recalculate workingHoursPerDay if both workStartTime and workEndTime are provided
+  if (emp.workStartTime && emp.workEndTime) {
+    const [startH, startM] = emp.workStartTime.split(':').map(Number);
+    const [endH, endM] = emp.workEndTime.split(':').map(Number);
+    const diffM = Math.max(0, (endH * 60 + endM) - (startH * 60 + startM));
+    if (diffM > 0) {
+      emp.workingHoursPerDay = Number((diffM / 60).toFixed(1));
+    }
+  }
 
   db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_EMPLOYEE_SCHEDULE', 'EMPLOYEE', `تحديث ساعات العمل والعطل المخصصة للموظف ${emp.fullNameAr}`, emp.id);
+  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_EMPLOYEE_SCHEDULE', 'EMPLOYEE', `تحديث ساعات العمل (${emp.workStartTime || ''} - ${emp.workEndTime || ''}) والعطل المخصصة للموظف ${emp.fullNameAr}`, emp.id);
   res.json(emp);
 });
 

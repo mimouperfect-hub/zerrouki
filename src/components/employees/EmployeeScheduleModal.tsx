@@ -48,6 +48,7 @@ export const EmployeeScheduleModal: React.FC<EmployeeScheduleModalProps> = ({
         lateToleranceMinutes,
         userId: selectedUserId || undefined
       });
+      window.dispatchEvent(new CustomEvent('zerrouki_attendance_updated'));
       onScheduleUpdated();
       onClose();
     } catch (err: any) {
