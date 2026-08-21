@@ -198,11 +198,24 @@ export const EmployeesView: React.FC = () => {
     }
   };
 
-  // KPI Calculations
-  const now = new Date();
-  const todayStr = now.toISOString().substring(0, 10);
+  // KPI Calculations in Algeria Time (GMT+1 / Africa/Algiers)
+  const todayStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Algiers',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
   const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  const todayDayName = arabicDays[now.getDay()];
+  const algeriaParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Algiers',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const algeriaDateMap: Record<string, string> = {};
+  for (const p of algeriaParts) algeriaDateMap[p.type] = p.value;
+  const todayDayName = arabicDays[new Date(`${algeriaDateMap.year}-${algeriaDateMap.month}-${algeriaDateMap.day}T12:00:00`).getDay()];
 
   const activeEmployees = employees.filter((e) => e.isActive !== false);
   const todayAttendance = attendanceRecords.filter((a) => a.date === todayStr);

@@ -57,6 +57,52 @@ function authenticateToken(req: Request, res: Response, next: Function) {
 
 apiRouter.use(authenticateToken);
 
+// ===============================================
+// ALGERIA TIMEZONE (GMT+1 / Africa/Algiers) HELPERS
+// ===============================================
+export function getAlgeriaDate(): Date {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Algiers',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date());
+  const map: Record<string, string> = {};
+  for (const part of parts) {
+    map[part.type] = part.value;
+  }
+  return new Date(`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}`);
+}
+
+export function getAlgeriaDateString(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Algiers',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+}
+
+export function getAlgeriaTimeString(): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Algiers',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date());
+}
+
+export function getAlgeriaDayName(): string {
+  const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const d = getAlgeriaDate();
+  return arabicDays[d.getDay()];
+}
+
 // Rate limiter map for failed login attempts (5 attempts -> 15 min lock)
 const failedLoginAttempts = new Map<string, { count: number; lockUntil: number }>();
 
@@ -1968,11 +2014,9 @@ apiRouter.post('/attendance/scan-qr', (req: Request, res: Response) => {
 
   if (!emp) return res.status(404).json({ error: 'لم يتم العثور على موظف مربوط بهذا الحساب' });
 
-  const now = new Date();
-  const todayStr = now.toISOString().substring(0, 10);
-  const currentTime = now.toTimeString().substring(0, 5); // HH:mm
-  const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  const todayDayName = arabicDays[now.getDay()];
+  const todayStr = getAlgeriaDateString();
+  const currentTime = getAlgeriaTimeString();
+  const todayDayName = getAlgeriaDayName();
 
   // Check if today is off day
   const isOffDay = emp.offDays?.includes(todayDayName) || emp.restDayAr === todayDayName;
@@ -2104,8 +2148,8 @@ apiRouter.post('/attendance/manual', (req: Request, res: Response) => {
       id: 'att-' + Date.now(),
       employeeId: emp.id,
       employeeNameAr: emp.fullNameAr,
-      date: date || new Date().toISOString().substring(0, 10),
-      checkIn,
+      date: date || getAlgeriaDateString(),
+      checkIn: checkIn || getAlgeriaTimeString(),
       checkOut,
       workingHours: workedHours,
       overtimeHours: Math.max(0, Number((workedHours - (emp.workingHoursPerDay || 8)).toFixed(1))),
