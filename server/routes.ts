@@ -2501,10 +2501,19 @@ apiRouter.get('/settings', (req: Request, res: Response) => {
 
 apiRouter.put('/settings', (req: Request, res: Response) => {
   const currentUser = (req as any).user;
-  const settings = db.get('settings');
-  const updated = { ...settings, ...req.body };
+  const currentSettings = db.get('settings') || {};
+  const updated = { ...currentSettings, ...req.body };
   db.set('settings', updated);
-  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_SETTINGS', 'SETTINGS', 'تحديث إعدادات المحل والنظام');
+  
+  if (req.body.managerPin) {
+    const users = db.get('users') || [];
+    const owner = users.find(u => u.roleCode === 'OWNER');
+    if (owner) {
+      owner.pinCode = req.body.managerPin;
+    }
+  }
+  db.save();
+  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_SETTINGS', 'SETTINGS', `تحديث إعدادات المحل (${updated.storeNameAr || ''}) والنظام`);
   res.json(updated);
 });
 
@@ -2944,37 +2953,7 @@ apiRouter.post('/customers/:id/redeem-points', (req: Request, res: Response) => 
   res.json({ message: 'تم استبدال نقاط الولاء بنجاح', discountValue, customer });
 });
 
-// ===============================================
-// AUDIT LOGS, SETTINGS, NOTIFICATIONS & BACKUPS
-// ===============================================
-apiRouter.get('/audit-logs', (req: Request, res: Response) => {
-  res.json(db.get('auditLogs') || []);
-});
 
-apiRouter.get('/settings', (req: Request, res: Response) => {
-  res.json(db.get('settings'));
-});
-
-apiRouter.put('/settings', (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  const currentSettings = db.get('settings');
-  Object.assign(currentSettings, req.body);
-  db.save();
-  db.logAudit(currentUser.id, currentUser.name, 'UPDATE_SETTINGS', 'SYSTEM', 'تحديث إعدادات النظام والمؤسسة', 'settings');
-  res.json(currentSettings);
-});
-
-apiRouter.get('/notifications', (req: Request, res: Response) => {
-  res.json(db.get('notifications') || []);
-});
-
-apiRouter.put('/notifications/:id/read', (req: Request, res: Response) => {
-  const notifications = db.get('notifications') || [];
-  const notif = notifications.find(n => n.id === req.params.id);
-  if (notif) notif.isRead = true;
-  db.save();
-  res.json({ success: true });
-});
 
 // ===============================================
 // FIREBASE CLOUD MANAGEMENT ROUTES

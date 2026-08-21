@@ -300,6 +300,57 @@ export const SettingsView: React.FC = () => {
               />
             </div>
 
+            {/* Operational & Inventory Thresholds */}
+            <div className="pt-2 border-t border-purple-100">
+              <h4 className="font-black text-purple-900 text-xs mb-2">⚙️ إعدادات تنبيهات المخزون ونقاط الولاء:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-gray-700">حد تنبيه نقص المخزون (قطع)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={settings.lowStockAlertThreshold ?? 10}
+                    onChange={(e) => setSettings({ ...settings, lowStockAlertThreshold: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 bg-[#FFFBF7] border border-amber-200/80 rounded-xl outline-none font-mono font-bold text-purple-950 focus:bg-white focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-gray-700">تنبيه انتهاء الصلاحية (أيام قبل الانتهاء)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={settings.expirationWarningDays ?? 45}
+                    onChange={(e) => setSettings({ ...settings, expirationWarningDays: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 bg-[#FFFBF7] border border-amber-200/80 rounded-xl outline-none font-mono font-bold text-purple-950 focus:bg-white focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-gray-700">نقطة ولاء واحدة لكل (د.ج مبيعات)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={settings.loyaltyPointsPerAmount ?? 100}
+                    onChange={(e) => setSettings({ ...settings, loyaltyPointsPerAmount: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 bg-[#FFFBF7] border border-amber-200/80 rounded-xl outline-none font-mono font-bold text-purple-950 focus:bg-white focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-gray-700">قيمة استبدال النقطة (د.ج خصم)</label>
+                  <input
+                    type="number"
+                    min={0.1}
+                    step="0.1"
+                    value={settings.loyaltyPointValueInCurrency ?? 1}
+                    onChange={(e) => setSettings({ ...settings, loyaltyPointValueInCurrency: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 bg-[#FFFBF7] border border-amber-200/80 rounded-xl outline-none font-mono font-bold text-purple-950 focus:bg-white focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={settingsSaving}
