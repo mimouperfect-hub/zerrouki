@@ -251,10 +251,10 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, 
               {/* Receipt Footer Notes & Barcode */}
               <div className="border-t border-gray-200 pt-3 text-center space-y-2">
                 <p className="text-[10px] font-black text-purple-950">
-                  شكراً لزيارتكم محلات زروقي للحلويات! ✨
+                  {settings?.invoiceFooterAr || `شكراً لزيارتكم ${settings?.storeNameAr || 'مؤسسة زروقي للحلويات'}! ✨`}
                 </p>
                 <p className="text-[9px] text-gray-500 font-semibold">
-                  بضاعتكم محل اهتمامنا • يرجى الاحتفاظ بالفاتورة
+                  {settings?.taglineAr || 'بضاعتكم محل اهتمامنا • يرجى الاحتفاظ بالفاتورة'}
                 </p>
                 <div className="flex flex-col items-center justify-center pt-1 space-y-0.5">
                   <Barcode className="w-32 h-7 text-gray-700" />
@@ -365,7 +365,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({ sale, 
               <div className="flex justify-between items-end border-t border-gray-200 pt-4">
                 <div className="space-y-1 text-gray-500 text-[11px]">
                   <p className="font-black text-purple-950">ملاحظات وشروط الفاتورة:</p>
-                  <p>• الفاتورة سارية ومحررة إلكترونياً من نظام زروقي للحلويات.</p>
+                  <p>• الفاتورة سارية ومحررة إلكترونياً من نظام {settings?.storeNameAr || 'مؤسسة زروقي للحلويات'}.</p>
                   <p>• تشمل جميع الرسوم والضرائب المستحقة للبيع المباشر.</p>
                 </div>
 

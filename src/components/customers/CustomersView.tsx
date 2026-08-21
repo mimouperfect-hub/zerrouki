@@ -5,13 +5,24 @@ import {
   History, Wrench, FileText, AlertCircle, Calendar, Printer, ShieldCheck
 } from 'lucide-react';
 import { api } from '../../api/client';
-import { Customer, CustomerPaymentRecord } from '../../types';
+import { Customer, CustomerPaymentRecord, SystemSettings } from '../../types';
 import { exportToExcel, amountInArabicWords } from '../../utils/excelExport';
 import { BrandLogo } from '../common/BrandLogo';
 
 export const CustomersView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).catch(console.error);
+    const handleSettingsUpdated = (e: any) => {
+      if (e.detail) setSettings(e.detail);
+      else api.getSettings().then(setSettings).catch(console.error);
+    };
+    window.addEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('zerrouki_settings_updated', handleSettingsUpdated);
+  }, []);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -1062,9 +1073,9 @@ export const CustomersView: React.FC = () => {
               {/* Document Header */}
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div className="space-y-1">
-                  <h1 className="text-2xl font-black text-purple-950">مؤسسة زروقي للتسيير والتجارة</h1>
-                  <p className="text-xs font-bold text-slate-600">حلويات ومستلزمات متكاملة عالية الجودة</p>
-                  <p className="text-xs text-slate-500 font-mono">هاتف: 0550123456 | البريد: contact@zerrouki.dz</p>
+                  <h1 className="text-2xl font-black text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'}</h1>
+                  <p className="text-xs font-bold text-slate-600">{settings?.taglineAr || 'حلويات ومستلزمات متكاملة عالية الجودة'}</p>
+                  <p className="text-xs text-slate-500 font-mono">هاتف: {settings?.phone || '0550123456'} {settings?.addressAr ? `| العنوان: ${settings.addressAr}` : ''}</p>
                 </div>
 
                 <div className="text-left space-y-1">
@@ -1202,7 +1213,7 @@ export const CustomersView: React.FC = () => {
             {/* Receipt Printable Widget */}
             <div className="p-6 space-y-4 bg-white text-slate-900 font-sans text-right dir-rtl">
               <div className="text-center border-b border-slate-200 pb-3 space-y-1">
-                <h2 className="font-black text-lg text-purple-950">مؤسسة زروقي للتسيير والتجارة</h2>
+                <h2 className="font-black text-lg text-purple-950">{settings?.storeNameAr || 'مؤسسة زروقي للحلويات'}</h2>
                 <div className="inline-block bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black px-3 py-1 rounded-full">
                   سند قبض واستلام مبلغ (Payment Receipt)
                 </div>
